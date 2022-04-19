@@ -239,12 +239,20 @@ elif page == "2: Standard Cleaning":
                     st.metric(label="Impressions", value="{:,}".format(social['Impressions'].sum()))
                 with col2:
                     st.subheader("Media Type")
-                    st.write(traditional['Type'].value_counts())
+                    st.write(social['Type'].value_counts())
                 st.subheader("Data")
                 st.markdown('(First 50 rows)')
                 st.dataframe(social.head(50).style.format(format_dict))
         if len(dupes) > 0:
             with st.expander("Deleted Duplicates"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.subheader("Basic Metrics")
+                    st.metric(label="Mentions", value="{:,}".format(len(dupes)))
+                    st.metric(label="Impressions", value="{:,}".format(dupes['Impressions'].sum()))
+                with col2:
+                    st.subheader("Media Type")
+                    st.write(dupes['Type'].value_counts())
                 st.dataframe(dupes.style.format(format_dict))
     else:
         def yahoo_cleanup(url_string):
