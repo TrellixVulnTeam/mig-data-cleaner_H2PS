@@ -26,15 +26,13 @@ def top_x_by_mentions(df, column_name):
 format_dict = {'AVE': '${0:,.0f}', 'Audience Reach': '{:,d}', 'Impressions': '{:,d}'}
 
 if 'page' not in st.session_state:
-    st.session_state['page'] = '1: Upload your CSV'
-if 'page_subtitle' not in st.session_state:
-    st.session_state.page_subtitle = ''
+    st.session_state.page = '1: Getting Started'
 if 'export_name' not in st.session_state:
     st.session_state.export_name = ''
-if 'df_raw' not in st.session_state:
-    st.session_state.df_raw = pd.DataFrame()
-if 'df_uncleaned' not in st.session_state:
-    st.session_state.df_uncleaned = pd.DataFrame()
+if 'df_raw' not in st.session_state: # this is the one that becomes the working thing
+    st.session_state.df_raw = None
+if 'df_uncleaned' not in st.session_state: # this one is not touched
+    st.session_state.df_uncleaned = None
 if 'df_traditional' not in st.session_state:
     st.session_state.df_traditional = pd.DataFrame()
 if 'df_social' not in st.session_state:
@@ -98,12 +96,15 @@ st.sidebar.markdown("""
     [Quickstart Guide](https://github.com/JeremyParkin/mig-data-cleaner/blob/main/README.md) \n
     [GitHub Project](https://github.com/JeremyParkin/mig-data-cleaner) 
     """)
-st.sidebar.caption("v.1.5.2.1")
+st.sidebar.caption("v.1.5.2.5")
 
 if page == "1: Getting Started":
     st.title('Getting Started')
     import altair as alt
     import io
+
+    data = st.session_state.df_uncleaned
+
 
     if st.session_state.upload_step == True:
         st.success('File uploaded.')
@@ -111,7 +112,14 @@ if page == "1: Getting Started":
             for key in st.session_state.keys():
                 del st.session_state[key]
             st.experimental_rerun()
-        data = st.session_state.df_raw
+
+
+        data["Mentions"] = 1
+
+        data['Audience Reach'] = data['Audience Reach'].astype('Int64')
+        data['AVE'] = data['AVE'].fillna(0)
+
+
         st.header('Exploratory Data Analysis')
         col1, col2 = st.columns(2)
         with col1:
@@ -134,20 +142,11 @@ if page == "1: Getting Started":
             st.write(original_top_outlets)
 
         st.markdown('##')
-
-        # st.subheader('Mention Trend')
-        #
-        # trend = data.groupby('Published Date')[['Mentions']].sum()
-        # # trend.plot()
-        # st.line_chart(trend, use_container_width=True)
-        #
-        # st.markdown('##')
-
         st.subheader('Mention Trend')
 
         trend = alt.Chart(data).mark_line().encode(
             x='Published Date:T',
-            y='count(Mentions):Q'
+            y='sum(Mentions):Q'
         )
         st.altair_chart(trend, use_container_width=True)
 
@@ -170,8 +169,8 @@ if page == "1: Getting Started":
             s = buffer.getvalue()
             st.text(s)
 
-    else:
-        with st.form("my_form"):
+    if st.session_state.upload_step == False:
+        with st.form('my_form'):
             client = st.text_input('Client organization name*', placeholder='eg. Air Canada', key='client',
                                    help='Required to build export file name.')
             period = st.text_input('Reporting period or focus*', placeholder='eg. March 2022', key='period',
@@ -186,19 +185,23 @@ if page == "1: Getting Started":
 
             elif submitted:
                 with st.spinner("Converting file format."):
-                    data = pd.read_csv(uploaded_file)
+                    st.session_state.df_uncleaned = pd.read_csv(uploaded_file)
+
+
+                    data = st.session_state.df_uncleaned
                     data = data.dropna(thresh=2)
 
-                    st.session_state.df_uncleaned = data
+
                     data["Mentions"] = 1
 
-                    st.session_state.df_raw = data
-                    st.session_state.upload_step = True
 
                     data['Audience Reach'] = data['Audience Reach'].astype('Int64')
                     data['AVE'] = data['AVE'].fillna(0)
+
+
                     st.session_state.export_name = f"{client} - {period} - clean_data.xlsx"
                     st.session_state.df_raw = data
+                    st.session_state.upload_step = True
                     st.experimental_rerun()
 
 
@@ -209,16 +212,35 @@ elif page == "2: Standard Cleaning":
     if st.session_state.upload_step == False:
         st.error('Please upload a CSV before trying this step.')
     elif st.session_state.standard_step:
-        st.success("Standard cleaning already done!")
+        st.success("Standard cleaning done!")
         traditional = st.session_state.df_traditional
         social = st.session_state.df_social
         dupes = st.session_state.df_dupes
+
         if len(traditional) > 0:
             with st.expander("Traditional"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.subheader("Basic Metrics")
+                    st.metric(label="Mentions", value="{:,}".format(len(traditional)))
+                    st.metric(label="Impressions", value="{:,}".format(traditional['Impressions'].sum()))
+                with col2:
+                    st.subheader("Media Type")
+                    st.write(traditional['Type'].value_counts())
+                st.subheader("Data")
                 st.markdown('(First 50 rows)')
                 st.dataframe(traditional.head(50).style.format(format_dict))
         if len(social) > 0:
             with st.expander("Social"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.subheader("Basic Metrics")
+                    st.metric(label="Mentions", value="{:,}".format(len(social)))
+                    st.metric(label="Impressions", value="{:,}".format(social['Impressions'].sum()))
+                with col2:
+                    st.subheader("Media Type")
+                    st.write(traditional['Type'].value_counts())
+                st.subheader("Data")
                 st.markdown('(First 50 rows)')
                 st.dataframe(social.head(50).style.format(format_dict))
         if len(dupes) > 0:
@@ -235,6 +257,7 @@ elif page == "2: Standard Cleaning":
             data.loc[data['URL'].str.contains(url_string, na=False), "sub"] = data['URL'].str.rsplit('/', 1).str[-1]
             data.loc[data['URL'].str.contains(url_string, na=False), "URL"] = 'https://news.yahoo.com/' + data["sub"]
             data.drop(["sub"], axis=1, inplace=True, errors='ignore')
+            # TODO: Option for Moreover URL Yahoos
 
 
         def fixable_impressions_list(df):
@@ -259,8 +282,6 @@ elif page == "2: Standard Cleaning":
             return outlet_imps
 
 
-        data = st.session_state.df_raw
-
         with st.form("my_form_basic_cleaning"):
             st.subheader("Cleaning options")
             merge_online = st.checkbox("Merge 'blogs' and 'press releases' into 'Online'", value=True)
@@ -269,16 +290,26 @@ elif page == "2: Standard Cleaning":
             if submitted:
                 with st.spinner("Running standard cleaning."):
 
+                    data = st.session_state.df_raw
+
+                    if "Published Date" in data:
+                        data['Date'] = pd.to_datetime(data['Published Date'] + ' ' + data['Published Time'])
+                        data.drop(["Published Date", "Published Time"], axis=1, inplace=True, errors='ignore')
+
+                        first_column = data.pop('Date')
+                        data.insert(0, 'Date', first_column)
+
+                    data = data.astype({"Media Type": 'category', "Sentiment": 'category', "Continent": 'category',
+                                        "Country": 'category',
+                                        'Province/State': 'category', "City": 'category', "Language": 'category',
+                                        'Mentions': 'category'})
+
                     data = data.rename(columns={
-                        'Published Date': 'Date',
-                        'Published Time': 'Time',
                         'Media Type': 'Type',
                         'Coverage Snippet': 'Snippet',
                         'Province/State': 'Prov/State',
                         'Audience Reach': 'Impressions'})
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.write('✓ Columns Renamed')
+
 
                     data.Type.replace({"ONLINE_NEWS": "ONLINE NEWS", "PRESS_RELEASE": "PRESS RELEASE"}, inplace=True)
                     data.loc[data['URL'].str.contains("www.facebook.com", na=False), 'Type'] = "FACEBOOK"
@@ -293,13 +324,10 @@ elif page == "2: Standard Cleaning":
                             "PRESS RELEASE": "ONLINE",
                             "BLOGS": "ONLINE"}, inplace=True)
 
-                    with col2:
-                        st.write('✓ Media Types Cleaned')
 
                     if "Original URL" in data:
                         data.loc[data["Original URL"].notnull(), "URL"] = data["Original URL"]
-                        with col3:
-                            st.write('✓ Original URLs Merged')
+
 
                     data.drop(["Timezone",
                                "Word Count",
@@ -311,16 +339,14 @@ elif page == "2: Standard Cleaning":
                                "County",
                                "isAudienceFromPartnerUniqueVisitor"],
                               axis=1, inplace=True, errors='ignore')
-                    with col1:
-                        st.write('✓ Junk Columns Dropped')
+
 
                     # Move columns
                     temp = data.pop('Impressions')
-                    data.insert(5, 'Impressions', temp)
+                    data.insert(4, 'Impressions', temp)
                     temp = data.pop('Mentions')
-                    data.insert(5, 'Mentions', temp)
-                    with col2:
-                        st.write('✓ Columns Sorted')
+                    data.insert(4, 'Mentions', temp)
+
 
                     # Strip extra white space
                     data['Headline'] = data['Headline'].astype(str)
@@ -333,32 +359,17 @@ elif page == "2: Standard Cleaning":
                     data['Headline'] = data['Headline'].str.replace('  ', ' ')
                     data['Outlet'] = data['Outlet'].str.replace('  ', ' ')
                     data['Author'] = data['Author'].str.replace('  ', ' ')
-                    with col3:
-                        st.write('✓ Extra Spaces Removed')
+
 
                     # Remove (Online)
                     data['Outlet'] = data['Outlet'].str.replace(' \(Online\)', '')
-                    with col1:
-                        st.write('✓ "(Online)" Removed')
 
-                    # Tag exploder
-                    if "Tags" in data:
-                        data['Tags'] = data['Tags'].astype(str)  # needed if column there but all blank
-                        data = data.join(data["Tags"].str.get_dummies(sep=","))
-                        with col2:
-                            st.write('✓ Tags Expanded')
-
-                    data = data.astype(
-                        {"Type": 'category', "Sentiment": 'category', "Continent": 'category',
-                         "Country": 'category', "Prov/State": 'category', "City": 'category', "Language": 'category'})
 
                     # SOCIALS To sep df
                     soc_array = ['FACEBOOK', 'TWITTER', 'INSTAGRAM', 'REDDIT', 'YOUTUBE']
                     social = data.loc[data['Type'].isin(soc_array)]
                     data = data[~data['Type'].isin(soc_array)]
 
-                    with col3:
-                        st.write('✓ Social Split Out')
 
                     # Fill known impressions
                     if fill_known_imp:
@@ -374,10 +385,7 @@ elif page == "2: Standard Cleaning":
 
                     data[['Headline']] = data[['Headline']].fillna('')
                     data['Headline'] = data['Headline'].map(lambda Headline: titlecase(Headline))
-                    # frames = [data, broadcast]
-                    # data = pd.concat(frames)
-                    with col1:
-                        st.write('✓ AP Style Capitalization')
+
 
                     # Yahoo standardizer
                     yahoo_cleanup('sports.yahoo.com')
@@ -385,8 +393,7 @@ elif page == "2: Standard Cleaning":
                     yahoo_cleanup('news.yahoo.com')
                     yahoo_cleanup('style.yahoo.com')
                     yahoo_cleanup('finance.yahoo.com')
-                    with col2:
-                        st.write('✓ Yahoo Standardization')
+
 
                     # Set aside blank URLs
                     blank_urls = data[data.URL.isna()]
@@ -433,25 +440,6 @@ elif page == "2: Standard Cleaning":
                     traditional = pd.concat(frames)
                     dupes = pd.concat([dupe_urls, dupe_cols])
 
-                    with col3:
-                        st.write('✓ Duplicates Removed')
-
-                    if len(traditional) > 0:
-                        with st.expander("Traditional"):
-                            st.markdown('(First 50 rows)')
-                            # st.dataframe(traditional.head(50).style.format(format_dict))
-                            st.dataframe(traditional.head(50))
-                            st.markdown('(First 50 rows)')
-                            # st.dataframe(data.head(50).style.format(format_dict))
-                    if len(social) > 0:
-                        with st.expander("Social"):
-                            st.markdown('(First 50 rows)')
-                            # st.dataframe(social.head(50).style.format(format_dict))
-                            st.dataframe(social.head(50))
-                    if len(dupes) > 0:
-                        with st.expander("Deleted Duplicates"):
-                            # st.dataframe(dupes.style.format(format_dict))
-                            st.dataframe(dupes)
 
                     original_trad_auths = top_x_by_mentions(traditional, "Author")
                     st.session_state.original_trad_auths = original_trad_auths
@@ -459,6 +447,7 @@ elif page == "2: Standard Cleaning":
                     st.session_state.df_social = social
                     st.session_state.df_dupes = dupes
                     st.session_state.standard_step = True
+                    st.experimental_rerun()
 
 elif page == "3: Impressions - Outliers":
     traditional = st.session_state.df_traditional
@@ -509,8 +498,6 @@ elif page == "4: Impressions - Fill Blanks":
 
     elif st.session_state.filled == True:
         st.success("Missing impressions fill complete!")
-
-
 
     elif st.session_state.outliers == False:
         st.warning('Please confirm outliers step is complete before running this step.')
@@ -607,16 +594,6 @@ elif page == "5: Authors - Missing":
             return headline_authors
 
 
-        # headline_table = pd.pivot_table(traditional, index="Headline", values=["Mentions", "Author"], aggfunc="count")
-        # headline_table["Missing"] = headline_table["Mentions"] - headline_table["Author"]
-        # headline_table = headline_table[headline_table["Author"] > 0]
-        # headline_table = headline_table[headline_table['Missing'] > 0]
-        # headline_table = headline_table.sort_values("Missing", ascending=False)
-        # headline_table = headline_table.reset_index()
-        # headline_table.rename(columns={'Author': 'Known',
-        #                                'Mentions': 'Total'},
-        #                       inplace=True, errors='raise')
-
         headline_table = traditional[['Headline', 'Mentions', 'Author']]
         headline_table = headline_table.groupby("Headline").count()
         headline_table["Missing"] = headline_table["Mentions"] - headline_table["Author"]
@@ -626,10 +603,8 @@ elif page == "5: Authors - Missing":
                               inplace=True, errors='raise')
 
         temp_headline_list = headline_table
-        # st.write(temp_headline_list)
         if counter < len(temp_headline_list):
             headline_text = temp_headline_list.iloc[counter]['Headline']
-            # headline_text = temp_headline_list.index[counter]
 
             but1, col3, but2 = st.columns(3)
             with but1:
@@ -649,9 +624,7 @@ elif page == "5: Authors - Missing":
                         st.session_state.counter = counter
                         st.experimental_rerun()
 
-            # st.write(headline_text)
             possibles = headline_authors(traditional, headline_text)['index'].tolist()
-            # possibles = headline_authors(traditional, headline_text).tolist()
 
             # CSS to inject contained in a string
             hide_table_row_index = """
@@ -708,7 +681,7 @@ elif page == "5: Authors - Missing":
                     st.session_state.counter = counter
                     st.experimental_rerun()
             else:
-                st.write("✓ Nothing left to update here.")
+                st.success("✓ Nothing left to update here.")
 
         col1, col2 = st.columns(2)
 
@@ -732,6 +705,9 @@ elif page == "6: Authors - Outlets":
     from requests.structures import CaseInsensitiveDict
 
     traditional = st.session_state.df_traditional
+
+    traditional.Mentions = traditional.Mentions.astype('int')
+
     auth_outlet_skipped = st.session_state.auth_outlet_skipped
     auth_outlet_table = st.session_state.auth_outlet_table
     top_auths_by = st.session_state.top_auths_by
@@ -850,8 +826,7 @@ elif page == "6: Authors - Outlets":
                     outlet = result['primaryEmployment']['outletName']
                     if result['country'] == None:
                         country = ''
-                    # elif result['country'] == []:
-                    #     country = ''
+
                     else:
                         country = result['country']['name']
                     auth_tuple = (auth_name, job_title, outlet, country)
@@ -914,11 +889,9 @@ elif page == "6: Authors - Outlets":
                         auth_name = result['firstName'] + " " + result['lastName']
                         job_title = result['primaryEmployment']['jobTitle']
                         outlet = result['primaryEmployment']['outletName']
-                        # country = result['country']['name']
                         if result['country'] == None:
                             country = 'None'
-                        # elif result['country'] == []:
-                        #     country = 'Blank'
+
                         else:
                             country = result['country']['name']
                         auth_tuple = (auth_name, job_title, outlet, country)
@@ -936,7 +909,6 @@ elif page == "6: Authors - Outlets":
 
             # FORM TO UPDATE AUTHOR OUTLET ######################
             with st.form('auth updater', clear_on_submit=True):
-                # if len(matched_authors) > 0:
                 col1, col2, col3 = st.columns([8, 1, 8])
                 with col1:
                     if len(matched_authors) > 0:
@@ -962,7 +934,6 @@ elif page == "6: Authors - Outlets":
                     new_outlet = box_outlet
 
                 auth_outlet_table.loc[auth_outlet_table["Author"] == author_name, "Outlet"] = new_outlet
-                # auth_outlet_skipped += 1
                 st.session_state.auth_outlet_skipped = auth_outlet_skipped
                 st.session_state.auth_outlet_table = auth_outlet_table
                 st.experimental_rerun()
@@ -1257,9 +1228,22 @@ elif page == "9: Download":
         uncleaned = st.session_state.df_uncleaned
         auth_outlet_table = st.session_state.auth_outlet_table
 
-        traditional['Date'] = pd.to_datetime(traditional['Date'])
-        social['Date'] = pd.to_datetime(social['Date'])
-        dupes['Date'] = pd.to_datetime(dupes['Date'])
+
+        # TODO: Split datetime back to 2 columns  - $$$  Maybe optional  $$$
+        # df['Date'] = df.Datetime.dt.date
+        # df['Time'] = df.Datetime.dt.time
+        # df.drop(["Datetime"], axis = 1, inplace=True, errors='ignore')
+        # NEED TO ADJUST COLUMNS?
+
+        # Tag exploder
+        if "Tags" in traditional:
+            traditional['Tags'] = traditional['Tags'].astype(str)  # needed if column there but all blank
+            traditional = traditional.join(traditional["Tags"].str.get_dummies(sep=",").astype('category'))
+
+        if "Tags" in social:
+            social['Tags'] = social['Tags'].astype(str)  # needed if column there but all blank
+            social = social.join(social["Tags"].str.get_dummies(sep=",").astype('category'))
+
 
         with st.form("my_form_download"):
             st.subheader("Generate your cleaned data workbook")
@@ -1273,6 +1257,10 @@ elif page == "9: Download":
                     workbook = writer.book
                     cleaned_dfs = []
                     cleaned_sheets = []
+
+                    # Add some cell formats.
+                    number_format = workbook.add_format({'num_format': '#,##0'})
+                    currency_format = workbook.add_format({'num_format': '$#,##0'})
 
                     if len(traditional) > 0:
                         traditional = traditional.sort_values(by=['Impressions'], ascending=False)
@@ -1295,6 +1283,12 @@ elif page == "9: Download":
                         authors.to_excel(writer, sheet_name='Authors', header=True, index=False)
                         worksheet5 = writer.sheets['Authors']
                         worksheet5.set_tab_color('green')
+                        worksheet5.set_default_row(22)
+                        worksheet5.set_column('A:A', 20, None)  # author
+                        worksheet5.set_column('B:B', 12, None)  # mentions
+                        worksheet5.set_column('C:C', 15, number_format)  # impressions
+                        worksheet5.set_column('D:D', 15, None)  # outlet
+                        worksheet5.freeze_panes(1, 0)
 
                     if len(dupes) > 0:
                         dupes.to_excel(writer, sheet_name='DLTD DUPES', header=True, index=False)
@@ -1312,25 +1306,30 @@ elif page == "9: Download":
                         column_settings = [{'header': column} for column in clean_df[0].columns]
                         clean_df[1].add_table(0, 0, max_row, max_col - 1, {'columns': column_settings})
 
-                    # Add some cell formats.
-                    number_format = workbook.add_format({'num_format': '#,##0'})
-                    currency_format = workbook.add_format({'num_format': '$#,##0'})
-                    # date_format = workbook.add_format({'num_format': 'yyyy-mm-dd'})
-                    time_format = workbook.add_format({'num_format': 'hh:mm:ss'})
 
                     # Add the Excel table structure. Pandas will add the data.
                     for sheet in cleaned_sheets:
                         sheet.set_default_row(22)
-                        sheet.set_column('A:A', 12, None)  # date
-                        sheet.set_column('B:B', 10, time_format)  # time
-                        sheet.set_column('C:C', 22, None)  # outlet
-                        sheet.set_column('D:D', 12, None)  # type
-                        sheet.set_column('E:E', 12, None)  # author
-                        sheet.set_column('F:F', 0, None)  # mentions
-                        sheet.set_column('G:G', 12, number_format)  # impressions
-                        sheet.set_column('H:H', 40, None)  # headline
-                        sheet.set_column('R:R', 12, currency_format)  # AVE
+                        sheet.set_column('A:A', 12, None)  # datetime
+                        sheet.set_column('B:B', 22, None)  # outlet
+                        sheet.set_column('C:C', 10, None)  # type
+                        sheet.set_column('D:D', 12, None)  # author
+                        sheet.set_column('E:E', 0, None)  # mentions
+                        sheet.set_column('F:F', 12, number_format)  # impressions
+                        sheet.set_column('G:G', 40, None)  # headline
+                        sheet.set_column('Q:Q', 12, currency_format)  # AVE
                         sheet.freeze_panes(1, 0)
+                        # sheet.set_default_row(22)
+                        # sheet.set_column('A:A', 12, None)  # date
+                        # sheet.set_column('B:B', 10, time_format)  # time
+                        # sheet.set_column('C:C', 22, None)  # outlet
+                        # sheet.set_column('D:D', 12, None)  # type
+                        # sheet.set_column('E:E', 12, None)  # author
+                        # sheet.set_column('F:F', 0, None)  # mentions
+                        # sheet.set_column('G:G', 12, number_format)  # impressions
+                        # sheet.set_column('H:H', 40, None)  # headline
+                        # sheet.set_column('R:R', 12, currency_format)  # AVE
+                        # sheet.freeze_panes(1, 0)
                     writer.save()
 
         if submitted:
