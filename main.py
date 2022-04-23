@@ -1292,11 +1292,14 @@ elif page == "9: Download":
                         worksheet5 = writer.sheets['Authors']
                         worksheet5.set_tab_color('green')
                         worksheet5.set_default_row(22)
-                        worksheet5.set_column('A:A', 20, None)  # author
+                        worksheet5.set_column('A:A', 30, None)  # author
                         worksheet5.set_column('B:B', 12, None)  # mentions
                         worksheet5.set_column('C:C', 15, number_format)  # impressions
-                        worksheet5.set_column('D:D', 15, None)  # outlet
+                        worksheet5.set_column('D:D', 35, None)  # outlet
                         worksheet5.freeze_panes(1, 0)
+
+                        # TODO: make top authors sheet a table
+                        # cleaned_dfs.append((authors, worksheet5))
 
                     if len(dupes) > 0:
                         dupes.to_excel(writer, sheet_name='DLTD DUPES', header=True, index=False)
@@ -1306,6 +1309,7 @@ elif page == "9: Download":
                         cleaned_sheets.append(worksheet3)
 
                     uncleaned.to_excel(writer, sheet_name='RAW', header=True, index=False)
+                    # TODO: drop mentions from RAW tab; for top row: freeze, align left, no borders
                     worksheet4 = writer.sheets['RAW']
                     worksheet4.set_tab_color('#c26f4f')
 
