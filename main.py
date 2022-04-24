@@ -652,8 +652,13 @@ elif page == "5: Authors - Missing":
                 st.write(" ")
             with col3:
                 st.subheader("Authors in CSV")
-                st.table(headline_authors(st.session_state.df_traditional, headline_text).rename(columns={'index': 'Possible Author(s)',
+                if len(headline_authors(st.session_state.df_traditional, headline_text) > 5:
+                    st.dataframe(headline_authors(st.session_state.df_traditional, headline_text).rename(columns={'index': 'Possible Author(s)',
                                                                                       'Author': 'Matches'}))
+                else:
+                    st.table(headline_authors(st.session_state.df_traditional, headline_text).rename(
+                        columns={'index': 'Possible Author(s)',
+                                 'Author': 'Matches'}))
 
             with st.form('auth updater', clear_on_submit=True):
 
