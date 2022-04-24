@@ -189,7 +189,7 @@ if page == "1: Getting Started":
 
 
                     # data = st.session_state.df_uncleaned
-                    st.session_state.df_untouched = st.session_state.df_untouched.dropna(thresh=2)
+                    st.session_state.df_untouched = st.session_state.df_untouched.dropna(thresh=3)
 
 
                     st.session_state.df_untouched["Mentions"] = 1
@@ -215,7 +215,7 @@ elif page == "2: Standard Cleaning":
         st.success("Standard cleaning done!")
         # traditional = st.session_state.df_traditional
         # social = st.session_state.df_social
-        dupes = st.session_state.df_dupes
+        # dupes = st.session_state.df_dupes
 
         if len(st.session_state.df_traditional) > 0:
             with st.expander("Traditional"):
@@ -243,17 +243,17 @@ elif page == "2: Standard Cleaning":
                 st.subheader("Data")
                 st.markdown('(First 50 rows)')
                 st.dataframe(st.session_state.df_social.head(50).style.format(format_dict))
-        if len(dupes) > 0:
+        if len(st.session_state.df_dupes) > 0:
             with st.expander("Deleted Duplicates"):
                 col1, col2 = st.columns(2)
                 with col1:
                     st.subheader("Basic Metrics")
-                    st.metric(label="Mentions", value="{:,}".format(len(dupes)))
-                    st.metric(label="Impressions", value="{:,}".format(dupes['Impressions'].sum()))
+                    st.metric(label="Mentions", value="{:,}".format(len(st.session_state.df_dupes)))
+                    st.metric(label="Impressions", value="{:,}".format(st.session_state.df_dupes['Impressions'].sum()))
                 with col2:
                     st.subheader("Media Type")
-                    st.write(dupes['Type'].value_counts())
-                st.dataframe(dupes.style.format(format_dict))
+                    st.write(st.session_state.df_dupes['Type'].value_counts())
+                st.dataframe(st.session_state.df_dupes.style.format(format_dict))
     else:
         def yahoo_cleanup(url_string):
             data.loc[data['URL'].str.contains(url_string, na=False), "Outlet"] = "Yahoo! News"
@@ -446,19 +446,37 @@ elif page == "2: Standard Cleaning":
                     dupe_cols.drop(["dupe_helper"], axis=1, inplace=True, errors='ignore')
                     frames = [data, broadcast, blank_set]
                     traditional = pd.concat(frames)
-                    dupes = pd.concat([dupe_urls, dupe_cols])
+                    st.session_state.df_dupes = pd.concat([dupe_urls, dupe_cols])
 
 
                     original_trad_auths = top_x_by_mentions(traditional, "Author")
                     st.session_state.original_trad_auths = original_trad_auths
                     st.session_state.df_traditional = traditional
                     # st.session_state.df_social = social
-                    st.session_state.df_dupes = dupes
+                    # st.session_state.df_dupes = dupes
                     st.session_state.standard_step = True
                     st.experimental_rerun()
 
 elif page == "3: Impressions - Outliers":
     traditional = st.session_state.df_traditional
+
+    # TODO: Statistical fill improvement, eg by type
+    # How to handle type with no impressions? if nan: 0 or 10
+    # Will this be good on small data sets?
+    # Should different sized data sets recommend different approaches? Why?
+    # Database API search? No - juice aint worth the squeeze
+    # HALF DECILE BY TYPE FORMULA:  (data.groupby(['Type'])['Impressions'].quantile(.1))/2
+    # Custom fill number input?
+    idea = '''
+        show a table by media type 
+        with columns for
+            - # known
+            - # blank
+            - min, 1/2 decile, quantiles 5, 10, 15
+        form with selection interface for each type, preset to half-decile
+    '''
+
+
     st.title('Impressions - Outliers')
     if st.session_state.upload_step == False:
         st.error('Please upload a CSV before trying this step.')
@@ -1141,7 +1159,7 @@ elif page == "8: Review":
     else:
         # traditional = st.session_state.df_traditional
         # social = st.session_state.df_social
-        dupes = st.session_state.df_dupes
+        # dupes = st.session_state.df_dupes
 
         if len(st.session_state.df_traditional) > 0:
             with st.expander("Traditional"):
@@ -1223,16 +1241,16 @@ elif page == "8: Review":
                 # st.dataframe(social.style.format(format_dict))
                 st.markdown('##')
 
-        if len(dupes) > 0:
+        if len(st.session_state.df_dupes) > 0:
             with st.expander("Duplicates Removed"):
                 col1, col2 = st.columns(2)
                 with col1:
                     st.subheader("Basic Metrics")
-                    st.metric(label="Mentions", value="{:,}".format(len(dupes)))
-                    st.metric(label="Impressions", value="{:,}".format(dupes['Impressions'].sum()))
+                    st.metric(label="Mentions", value="{:,}".format(len(st.session_state.df_dupes)))
+                    st.metric(label="Impressions", value="{:,}".format(st.session_state.df_dupes['Impressions'].sum()))
                 with col2:
                     st.subheader("Media Type")
-                    st.write(dupes['Type'].value_counts())
+                    st.write(st.session_state.df_dupes['Type'].value_counts())
 
 
 elif page == "9: Download":
@@ -1246,9 +1264,9 @@ elif page == "9: Download":
     else:
         export_name = st.session_state.export_name
 
-        traditional = st.session_state.df_traditional
-        social = st.session_state.df_social
-        dupes = st.session_state.df_dupes
+        # traditional = st.session_state.df_traditional
+        # social = st.session_state.df_social
+        # dupes = st.session_state.df_dupes
         uncleaned = st.session_state.df_untouched
         auth_outlet_table = st.session_state.auth_outlet_table
 
@@ -1260,13 +1278,13 @@ elif page == "9: Download":
         # NEED TO ADJUST COLUMNS?
 
         # Tag exploder
-        if "Tags" in traditional:
-            traditional['Tags'] = traditional['Tags'].astype(str)  # needed if column there but all blank
-            traditional = traditional.join(traditional["Tags"].str.get_dummies(sep=",").astype('category'))
+        if "Tags" in st.session_state.df_traditional:
+            st.session_state.df_traditional['Tags'] = st.session_state.df_traditional['Tags'].astype(str)  # needed if column there but all blank
+            st.session_state.df_traditional = st.session_state.df_traditional.join(st.session_state.df_traditional["Tags"].str.get_dummies(sep=",").astype('category'))
 
-        if "Tags" in social:
-            social['Tags'] = social['Tags'].astype(str)  # needed if column there but all blank
-            social = social.join(social["Tags"].str.get_dummies(sep=",").astype('category'))
+        if "Tags" in st.session_state.df_social:
+            st.session_state.df_social['Tags'] = st.session_state.df_social['Tags'].astype(str)  # needed if column there but all blank
+            st.session_state.df_social = st.session_state.df_social.join(st.session_state.df_social["Tags"].str.get_dummies(sep=",").astype('category'))
 
 
         with st.form("my_form_download"):
@@ -1286,20 +1304,20 @@ elif page == "9: Download":
                     number_format = workbook.add_format({'num_format': '#,##0'})
                     currency_format = workbook.add_format({'num_format': '$#,##0'})
 
-                    if len(traditional) > 0:
-                        traditional = traditional.sort_values(by=['Impressions'], ascending=False)
-                        traditional.to_excel(writer, sheet_name='CLEAN TRAD', startrow=1, header=False, index=False)
+                    if len(st.session_state.df_traditional) > 0:
+                        st.session_state.df_traditional = st.session_state.df_traditional.sort_values(by=['Impressions'], ascending=False)
+                        st.session_state.df_traditional.to_excel(writer, sheet_name='CLEAN TRAD', startrow=1, header=False, index=False)
                         worksheet1 = writer.sheets['CLEAN TRAD']
                         worksheet1.set_tab_color('black')
-                        cleaned_dfs.append((traditional, worksheet1))
+                        cleaned_dfs.append((st.session_state.df_traditional, worksheet1))
                         cleaned_sheets.append(worksheet1)
 
-                    if len(social) > 0:
-                        social = social.sort_values(by=['Impressions'], ascending=False)
-                        social.to_excel(writer, sheet_name='CLEAN SOCIAL', startrow=1, header=False, index=False)
+                    if len(st.session_state.df_social) > 0:
+                        st.session_state.df_social = st.session_state.df_social.sort_values(by=['Impressions'], ascending=False)
+                        st.session_state.df_social.to_excel(writer, sheet_name='CLEAN SOCIAL', startrow=1, header=False, index=False)
                         worksheet2 = writer.sheets['CLEAN SOCIAL']
                         worksheet2.set_tab_color('black')
-                        cleaned_dfs.append((social, worksheet2))
+                        cleaned_dfs.append((st.session_state.df_social, worksheet2))
                         cleaned_sheets.append(worksheet2)
 
                     if len(auth_outlet_table) > 0:
@@ -1317,11 +1335,11 @@ elif page == "9: Download":
                         # TODO: make top authors sheet a table
                         # cleaned_dfs.append((authors, worksheet5))
 
-                    if len(dupes) > 0:
-                        dupes.to_excel(writer, sheet_name='DLTD DUPES', header=True, index=False)
+                    if len(st.session_state.df_dupes) > 0:
+                        st.session_state.df_dupes.to_excel(writer, sheet_name='DLTD DUPES', header=True, index=False)
                         worksheet3 = writer.sheets['DLTD DUPES']
                         worksheet3.set_tab_color('#c26f4f')
-                        cleaned_dfs.append((dupes, worksheet3))
+                        cleaned_dfs.append((st.session_state.df_dupes, worksheet3))
                         cleaned_sheets.append(worksheet3)
 
                     uncleaned.to_excel(writer, sheet_name='RAW', header=True, index=False)
