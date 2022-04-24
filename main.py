@@ -31,8 +31,8 @@ if 'export_name' not in st.session_state:
     st.session_state.export_name = ''
 if 'df_raw' not in st.session_state: # this is the one that becomes the working thing
     st.session_state.df_raw = None
-if 'df_uncleaned' not in st.session_state: # this one is not touched
-    st.session_state.df_uncleaned = None
+if 'df_untouched' not in st.session_state: # this one is not touched
+    st.session_state.df_untouched = None
 if 'df_traditional' not in st.session_state:
     st.session_state.df_traditional = pd.DataFrame()
 if 'df_social' not in st.session_state:
@@ -103,7 +103,7 @@ if page == "1: Getting Started":
     import altair as alt
     import io
 
-    data = st.session_state.df_uncleaned
+    # data = st.session_state.df_uncleaned
 
 
     if st.session_state.upload_step == True:
@@ -114,37 +114,37 @@ if page == "1: Getting Started":
             st.experimental_rerun()
 
 
-        data["Mentions"] = 1
+        st.session_state.df_untouched["Mentions"] = 1
 
-        data['Audience Reach'] = data['Audience Reach'].astype('Int64')
-        data['AVE'] = data['AVE'].fillna(0)
+        st.session_state.df_untouched['Audience Reach'] = st.session_state.df_untouched['Audience Reach'].astype('Int64')
+        st.session_state.df_untouched['AVE'] = st.session_state.df_untouched['AVE'].fillna(0)
 
 
         st.header('Exploratory Data Analysis')
         col1, col2 = st.columns(2)
         with col1:
             st.subheader("Basic Metrics")
-            st.metric(label="Mentions", value="{:,}".format(len(data.dropna(thresh=3))))
-            st.metric(label="Impressions", value="{:,}".format(data['Audience Reach'].sum()))
+            st.metric(label="Mentions", value="{:,}".format(len(st.session_state.df_untouched.dropna(thresh=3))))
+            st.metric(label="Impressions", value="{:,}".format(st.session_state.df_untouched['Audience Reach'].sum()))
         with col2:
             st.subheader("Media Type")
-            st.write(data['Media Type'].value_counts())
+            st.write(st.session_state.df_untouched['Media Type'].value_counts())
 
         col3, col4 = st.columns(2)
         with col3:
             st.subheader("Top Authors")
-            original_top_authors = (top_x_by_mentions(data, "Author"))
+            original_top_authors = (top_x_by_mentions(st.session_state.df_untouched, "Author"))
             st.write(original_top_authors)
             st.session_state.original_auths = original_top_authors
         with col4:
             st.subheader("Top Outlets")
-            original_top_outlets = (top_x_by_mentions(data, "Outlet"))
+            original_top_outlets = (top_x_by_mentions(st.session_state.df_untouched, "Outlet"))
             st.write(original_top_outlets)
 
         st.markdown('##')
         st.subheader('Mention Trend')
 
-        trend = alt.Chart(data).mark_line().encode(
+        trend = alt.Chart(st.session_state.df_untouched).mark_line().encode(
             x='Published Date:T',
             y='sum(Mentions):Q'
         )
@@ -152,7 +152,7 @@ if page == "1: Getting Started":
 
         st.markdown('##')
         st.subheader('Impressions Trend')
-        trend2 = alt.Chart(data).mark_line().encode(
+        trend2 = alt.Chart(st.session_state.df_untouched).mark_line().encode(
             x='Published Date:T',
             y='sum(Audience Reach):Q'
         )
@@ -160,12 +160,12 @@ if page == "1: Getting Started":
 
         st.subheader("Raw Data")
         st.markdown('(First 50 rows)')
-        st.dataframe(data.head(50).style.format(format_dict))
+        st.dataframe(st.session_state.df_untouched.head(50).style.format(format_dict))
         st.markdown('##')
 
         with st.expander('Data set stats'):
             buffer = io.StringIO()
-            data.info(buf=buffer)
+            st.session_state.df_untouched.info(buf=buffer)
             s = buffer.getvalue()
             st.text(s)
 
@@ -185,22 +185,22 @@ if page == "1: Getting Started":
 
             elif submitted:
                 with st.spinner("Converting file format."):
-                    st.session_state.df_uncleaned = pd.read_csv(uploaded_file)
+                    st.session_state.df_untouched = pd.read_csv(uploaded_file)
 
 
-                    data = st.session_state.df_uncleaned
-                    data = data.dropna(thresh=2)
+                    # data = st.session_state.df_uncleaned
+                    st.session_state.df_untouched = st.session_state.df_untouched.dropna(thresh=2)
 
 
-                    data["Mentions"] = 1
+                    st.session_state.df_untouched["Mentions"] = 1
 
 
-                    data['Audience Reach'] = data['Audience Reach'].astype('Int64')
-                    data['AVE'] = data['AVE'].fillna(0)
+                    st.session_state.df_untouched['Audience Reach'] = st.session_state.df_untouched['Audience Reach'].astype('Int64')
+                    st.session_state.df_untouched['AVE'] = st.session_state.df_untouched['AVE'].fillna(0)
 
 
                     st.session_state.export_name = f"{client} - {period} - clean_data.xlsx"
-                    st.session_state.df_raw = data
+                    st.session_state.df_raw = st.session_state.df_untouched
                     st.session_state.upload_step = True
                     st.experimental_rerun()
 
@@ -213,36 +213,36 @@ elif page == "2: Standard Cleaning":
         st.error('Please upload a CSV before trying this step.')
     elif st.session_state.standard_step:
         st.success("Standard cleaning done!")
-        traditional = st.session_state.df_traditional
-        social = st.session_state.df_social
+        # traditional = st.session_state.df_traditional
+        # social = st.session_state.df_social
         dupes = st.session_state.df_dupes
 
-        if len(traditional) > 0:
+        if len(st.session_state.df_traditional) > 0:
             with st.expander("Traditional"):
                 col1, col2 = st.columns(2)
                 with col1:
                     st.subheader("Basic Metrics")
-                    st.metric(label="Mentions", value="{:,}".format(len(traditional)))
-                    st.metric(label="Impressions", value="{:,}".format(traditional['Impressions'].sum()))
+                    st.metric(label="Mentions", value="{:,}".format(len(st.session_state.df_traditional)))
+                    st.metric(label="Impressions", value="{:,}".format(st.session_state.df_traditional['Impressions'].sum()))
                 with col2:
                     st.subheader("Media Type")
-                    st.write(traditional['Type'].value_counts())
+                    st.write(st.session_state.df_traditional['Type'].value_counts())
                 st.subheader("Data")
                 st.markdown('(First 50 rows)')
-                st.dataframe(traditional.head(50).style.format(format_dict))
-        if len(social) > 0:
+                st.dataframe(st.session_state.df_traditional.head(50).style.format(format_dict))
+        if len(st.session_state.df_social) > 0:
             with st.expander("Social"):
                 col1, col2 = st.columns(2)
                 with col1:
                     st.subheader("Basic Metrics")
-                    st.metric(label="Mentions", value="{:,}".format(len(social)))
-                    st.metric(label="Impressions", value="{:,}".format(social['Impressions'].sum()))
+                    st.metric(label="Mentions", value="{:,}".format(len(st.session_state.df_social)))
+                    st.metric(label="Impressions", value="{:,}".format(st.session_state.df_social['Impressions'].sum()))
                 with col2:
                     st.subheader("Media Type")
-                    st.write(social['Type'].value_counts())
+                    st.write(st.session_state.df_social['Type'].value_counts())
                 st.subheader("Data")
                 st.markdown('(First 50 rows)')
-                st.dataframe(social.head(50).style.format(format_dict))
+                st.dataframe(st.session_state.df_social.head(50).style.format(format_dict))
         if len(dupes) > 0:
             with st.expander("Deleted Duplicates"):
                 col1, col2 = st.columns(2)
@@ -375,7 +375,7 @@ elif page == "2: Standard Cleaning":
 
                     # SOCIALS To sep df
                     soc_array = ['FACEBOOK', 'TWITTER', 'INSTAGRAM', 'REDDIT', 'YOUTUBE']
-                    social = data.loc[data['Type'].isin(soc_array)]
+                    st.session_state.df_social = data.loc[data['Type'].isin(soc_array)]
                     data = data[~data['Type'].isin(soc_array)]
 
 
@@ -452,7 +452,7 @@ elif page == "2: Standard Cleaning":
                     original_trad_auths = top_x_by_mentions(traditional, "Author")
                     st.session_state.original_trad_auths = original_trad_auths
                     st.session_state.df_traditional = traditional
-                    st.session_state.df_social = social
+                    # st.session_state.df_social = social
                     st.session_state.df_dupes = dupes
                     st.session_state.standard_step = True
                     st.experimental_rerun()
@@ -575,7 +575,7 @@ elif page == "4: Impressions - Fill Blanks":
 
 elif page == "5: Authors - Missing":
     st.title('Authors - Missing')
-    traditional = st.session_state.df_traditional
+    # traditional = st.session_state.df_traditional
     original_trad_auths = st.session_state.original_trad_auths
 
     if st.session_state.upload_step == False:
@@ -583,7 +583,7 @@ elif page == "5: Authors - Missing":
 
     elif st.session_state.standard_step == False:
         st.error('Please run the Standard Cleaning before trying this step.')
-    elif len(traditional) == 0:
+    elif len(st.session_state.df_traditional) == 0:
         st.subheader("No traditional media in data. Skip to next step.")
 
     else:
@@ -602,7 +602,7 @@ elif page == "5: Authors - Missing":
             return headline_authors
 
 
-        headline_table = traditional[['Headline', 'Mentions', 'Author']]
+        headline_table = st.session_state.df_traditional[['Headline', 'Mentions', 'Author']]
         headline_table = headline_table.groupby("Headline").count()
         headline_table["Missing"] = headline_table["Mentions"] - headline_table["Author"]
         headline_table = headline_table[(headline_table["Author"] > 0) & (headline_table['Missing'] > 0)].sort_values(
@@ -632,7 +632,7 @@ elif page == "5: Authors - Missing":
                         st.session_state.counter = counter
                         st.experimental_rerun()
 
-            possibles = headline_authors(traditional, headline_text)['index'].tolist()
+            possibles = headline_authors(st.session_state.df_traditional, headline_text)['index'].tolist()
 
             # CSS to inject contained in a string
             hide_table_row_index = """
@@ -652,7 +652,7 @@ elif page == "5: Authors - Missing":
                 st.write(" ")
             with col3:
                 st.subheader("Authors in CSV")
-                st.table(headline_authors(traditional, headline_text).rename(columns={'index': 'Possible Author(s)',
+                st.table(headline_authors(st.session_state.df_traditional, headline_text).rename(columns={'index': 'Possible Author(s)',
                                                                                       'Author': 'Matches'}))
 
             with st.form('auth updater', clear_on_submit=True):
@@ -677,8 +677,8 @@ elif page == "5: Authors - Missing":
 
                 submitted = st.form_submit_button("Update Author")
                 if submitted:
-                    fix_author(traditional, headline_text, new_author)
-                    st.session_state.df_traditional = traditional
+                    fix_author(st.session_state.df_traditional, headline_text, new_author)
+                    # st.session_state.df_traditional = traditional
                     st.experimental_rerun()
         else:
             st.write("You've reached the end of the list!")
@@ -699,7 +699,7 @@ elif page == "5: Authors - Missing":
 
         with col2:
             st.subheader("New Top Authors")
-            st.dataframe(top_x_by_mentions(traditional, "Author"))
+            st.dataframe(top_x_by_mentions(st.session_state.df_traditional, "Author"))
 
         # st.subheader("Fixable Author Stats")
         # stats = (fixable_headline_stats(traditional, primary="Headline", secondary="Author"))
@@ -712,9 +712,9 @@ elif page == "6: Authors - Outlets":
     import requests
     from requests.structures import CaseInsensitiveDict
 
-    traditional = st.session_state.df_traditional
+    # traditional = st.session_state.df_traditional
 
-    traditional.Mentions = traditional.Mentions.astype('int')
+    st.session_state.df_traditional.Mentions = st.session_state.df_traditional.Mentions.astype('int')
 
     auth_outlet_skipped = st.session_state.auth_outlet_skipped
     auth_outlet_table = st.session_state.auth_outlet_table
@@ -764,14 +764,14 @@ elif page == "6: Authors - Outlets":
         st.session_state.top_auths_by = top_auths_by
         if len(auth_outlet_table) == 0:
             if top_auths_by == 'Mentions':
-                auth_outlet_table = traditional[['Author', 'Mentions', 'Impressions']].groupby(
+                auth_outlet_table = st.session_state.df_traditional[['Author', 'Mentions', 'Impressions']].groupby(
                     by=['Author']).sum().sort_values(
                     ['Mentions', 'Impressions'], ascending=False).reset_index()
                 auth_outlet_table['Outlet'] = ''
                 auth_outlet_todo = auth_outlet_table
 
             if top_auths_by == 'Impressions':
-                auth_outlet_table = traditional[['Author', 'Mentions', 'Impressions']].groupby(
+                auth_outlet_table = st.session_state.df_traditional[['Author', 'Mentions', 'Impressions']].groupby(
                     by=['Author']).sum().sort_values(
                     ['Impressions', 'Mentions'], ascending=False).reset_index()
                 auth_outlet_table['Outlet'] = ''
@@ -869,14 +869,19 @@ elif page == "6: Authors - Outlets":
             col1, col2, col3 = st.columns([8, 1, 16])
             with col1:
                 st.subheader("Outlets in CSV")  #########################################
-                outlets_in_coverage = traditional.loc[traditional.Author == author_name].Outlet.value_counts()
+                outlets_in_coverage = st.session_state.df_traditional.loc[st.session_state.df_traditional.Author == author_name].Outlet.value_counts()
                 outlets_in_coverage_list = outlets_in_coverage.index
                 outlets_in_coverage_list = outlets_in_coverage_list.insert(0, "Freelance")
-                outlets_in_coverage = outlets_in_coverage.rename_axis('Outlet').reset_index(name='Matches')
+                outlets_in_coverage = outlets_in_coverage.rename_axis('Outlet').reset_index(name='Hits')
 
-                st.dataframe(outlets_in_coverage.style.apply(
+                if len(outlets_in_coverage) > 5:
+                    st.dataframe(outlets_in_coverage.style.apply(
                     lambda x: ['background: goldenrod; color: black' if v in db_outlets else "" for v in x],
                     axis=1))
+                else:
+                    st.table(outlets_in_coverage.style.apply(
+                        lambda x: ['background: goldenrod; color: black' if v in db_outlets else "" for v in x],
+                        axis=1))
 
             with col2:
                 st.write(" ")
@@ -909,9 +914,15 @@ elif page == "6: Authors - Outlets":
                                                                 columns=['Name', 'Title', 'Outlet', 'Country'])
                     matched_authors.loc[matched_authors.Outlet == "[Freelancer]", "Outlet"] = "Freelance"
 
-                    st.table(matched_authors.style.apply(lambda x: [
+                    if len(matched_authors) > 5:
+                        st.dataframe(matched_authors.style.apply(lambda x: [
                         'background: goldenrod; color: black' if v in outlets_in_coverage.Outlet.tolist() else "" for v
                         in x], axis=1).apply(name_match, axis=0, subset='Name'))
+                    else:
+                        st.table(matched_authors.style.apply(lambda x: [
+                            'background: goldenrod; color: black' if v in outlets_in_coverage.Outlet.tolist() else ""
+                            for v
+                            in x], axis=1).apply(name_match, axis=0, subset='Name'))
 
                     possibles = matched_authors.Outlet
 
@@ -993,7 +1004,7 @@ elif page == "7: Translation":
     from titlecase import titlecase
 
     traditional = st.session_state.df_traditional
-    social = st.session_state.df_social
+    # social = st.session_state.df_social
     if st.session_state.upload_step == False:
         st.error('Please upload a CSV before trying this step.')
     elif st.session_state.standard_step == False:
@@ -1001,7 +1012,7 @@ elif page == "7: Translation":
     elif st.session_state.translated_headline == True and st.session_state.translated_snippet == True and st.session_state.translated_summary == True:
         st.subheader("✓ Translation complete.")
         trad_non_eng = len(traditional[traditional['Language'] != 'English'])
-        soc_non_eng = len(social[social['Language'] != 'English'])
+        soc_non_eng = len(st.session_state.df_social[st.session_state.df_social['Language'] != 'English'])
 
         if trad_non_eng > 0:
             with st.expander("Traditional - Non-English"):
@@ -1010,10 +1021,10 @@ elif page == "7: Translation":
 
         if soc_non_eng > 0:
             with st.expander("Social - Non-English"):
-                st.dataframe(social[social['Language'] != 'English'][
+                st.dataframe(st.session_state.df_social[st.session_state.df_social['Language'] != 'English'][
                                  ['Outlet', 'Snippet', 'Summary', 'Language', 'Country']])
     elif len(traditional[traditional['Language'] != 'English']) == 0 and len(
-            social[social['Language'] != 'English']) == 0:
+            st.session_state.df_social[st.session_state.df_social['Language'] != 'English']) == 0:
         st.subheader("No translation required")
     else:
         def translate_col(df, name_of_column):
@@ -1035,7 +1046,7 @@ elif page == "7: Translation":
 
         def translation_stats_combo():
             non_english_records = len(traditional[traditional['Language'] != 'English']) + len(
-                social[social['Language'] != 'English'])
+                st.session_state.df_social[st.session_state.df_social['Language'] != 'English'])
             minutes = non_english_records // 100
             if minutes == 0:
                 min_word = 'minute'
@@ -1050,9 +1061,9 @@ elif page == "7: Translation":
                 st.dataframe(traditional[traditional['Language'] != 'English'][
                                  ['Outlet', 'Headline', 'Snippet', 'Summary', 'Language', 'Country']])
 
-        if len(social) > 0:
+        if len(st.session_state.df_social) > 0:
             with st.expander("Social - Non-English"):
-                st.dataframe(social[social['Language'] != 'English'][
+                st.dataframe(st.session_state.df_social[st.session_state.df_social['Language'] != 'English'][
                                  ['Outlet', 'Snippet', 'Summary', 'Language', 'Country']])
 
         with st.form('translation_form'):
@@ -1096,21 +1107,21 @@ elif page == "7: Translation":
                     frames = [traditional, broadcast]
                     traditional = pd.concat(frames)
 
-                    translate_col(social, 'Headline')
+                    translate_col(st.session_state.df_social, 'Headline')
                     st.session_state.translated_headline = True
                     st.success(f'Done translating headlines!')
                 if summary_to_english:
                     translate_col(traditional, 'Summary')
-                    translate_col(social, 'Summary')
+                    translate_col(st.session_state.df_social, 'Summary')
                     st.session_state.translated_summary = True
                     st.success(f'Done translating summaries!')
                 if snippet_to_english:
                     translate_col(traditional, 'Snippet')
-                    translate_col(social, 'Snippet')
+                    translate_col(st.session_state.df_social, 'Snippet')
                     st.session_state.translated_snippet = True
                     st.success(f'Done translating snippets!')
                 st.session_state.df_traditional = traditional
-                st.session_state.df_social = social
+                # st.session_state.df_social = social
                 st.experimental_rerun()
 
 
@@ -1123,30 +1134,30 @@ elif page == "8: Review":
     elif st.session_state.standard_step == False:
         st.error('Please run the Standard Cleaning before trying this step.')
     else:
-        traditional = st.session_state.df_traditional
-        social = st.session_state.df_social
+        # traditional = st.session_state.df_traditional
+        # social = st.session_state.df_social
         dupes = st.session_state.df_dupes
 
-        if len(traditional) > 0:
+        if len(st.session_state.df_traditional) > 0:
             with st.expander("Traditional"):
                 col1, col2 = st.columns(2)
                 with col1:
                     st.subheader("Basic Metrics")
-                    st.metric(label="Mentions", value="{:,}".format(len(traditional)))
-                    st.metric(label="Impressions", value="{:,}".format(traditional['Impressions'].sum()))
+                    st.metric(label="Mentions", value="{:,}".format(len(st.session_state.df_traditional)))
+                    st.metric(label="Impressions", value="{:,}".format(st.session_state.df_traditional['Impressions'].sum()))
                 with col2:
                     st.subheader("Media Type")
-                    st.write(traditional['Type'].value_counts())
+                    st.write(st.session_state.df_traditional['Type'].value_counts())
 
                 col3, col4 = st.columns(2)
                 with col3:
                     st.subheader("Top Authors")
-                    top_authors = (top_x_by_mentions(traditional, "Author"))
+                    top_authors = (top_x_by_mentions(st.session_state.df_traditional, "Author"))
                     st.table(top_authors)
 
                 with col4:
                     st.subheader("Top Outlets")
-                    top_outlets = (top_x_by_mentions(traditional, "Outlet"))
+                    top_outlets = (top_x_by_mentions(st.session_state.df_traditional, "Outlet"))
                     st.table(top_outlets)
 
                 # st.markdown('##')
@@ -1174,16 +1185,16 @@ elif page == "8: Review":
                 # st.dataframe(traditional.style.format(format_dict))
                 st.markdown('##')
 
-        if len(social) > 0:
+        if len(st.session_state.df_social) > 0:
             with st.expander("Social"):
                 col1, col2 = st.columns(2)
                 with col1:
                     st.subheader("Basic Metrics")
-                    st.metric(label="Mentions", value="{:,}".format(len(social)))
-                    st.metric(label="Impressions", value="{:,}".format(social['Impressions'].sum()))
+                    st.metric(label="Mentions", value="{:,}".format(len(st.session_state.df_social)))
+                    st.metric(label="Impressions", value="{:,}".format(st.session_state.df_social['Impressions'].sum()))
                 with col2:
                     st.subheader("Media Type")
-                    st.write(social['Type'].value_counts())
+                    st.write(st.session_state.df_social['Type'].value_counts())
 
                 # st.markdown('##')
                 # st.subheader('Mention Trend')
@@ -1233,7 +1244,7 @@ elif page == "9: Download":
         traditional = st.session_state.df_traditional
         social = st.session_state.df_social
         dupes = st.session_state.df_dupes
-        uncleaned = st.session_state.df_uncleaned
+        uncleaned = st.session_state.df_untouched
         auth_outlet_table = st.session_state.auth_outlet_table
 
 
