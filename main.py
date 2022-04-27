@@ -159,8 +159,8 @@ if page == "1: Getting Started":
         st.altair_chart(trend2, use_container_width=True)
 
         st.subheader("Raw Data")
-        st.markdown('(First 50 rows)')
-        st.dataframe(st.session_state.df_untouched.head(50).style.format(format_dict))
+        st.markdown('(First 100 rows)')
+        st.dataframe(st.session_state.df_untouched.head(100).style.format(format_dict, na_rep=' '))
         st.markdown('##')
 
         with st.expander('Data set stats'):
@@ -209,6 +209,8 @@ elif page == "2: Standard Cleaning":
     st.title('Standard Cleaning')
     from titlecase import titlecase
 
+    # TODO: Option to REMOVE NEWSWIRES
+
     if st.session_state.upload_step == False:
         st.error('Please upload a CSV before trying this step.')
     elif st.session_state.standard_step:
@@ -229,7 +231,7 @@ elif page == "2: Standard Cleaning":
                     st.write(st.session_state.df_traditional['Type'].value_counts())
                 st.subheader("Data")
                 st.markdown('(First 50 rows)')
-                st.dataframe(st.session_state.df_traditional.head(50).style.format(format_dict))
+                st.dataframe(st.session_state.df_traditional.head(50).style.format(format_dict, na_rep=' '))
         if len(st.session_state.df_social) > 0:
             with st.expander("Social"):
                 col1, col2 = st.columns(2)
@@ -242,7 +244,7 @@ elif page == "2: Standard Cleaning":
                     st.write(st.session_state.df_social['Type'].value_counts())
                 st.subheader("Data")
                 st.markdown('(First 50 rows)')
-                st.dataframe(st.session_state.df_social.head(50).style.format(format_dict))
+                st.dataframe(st.session_state.df_social.head(50).style.format(format_dict, na_rep=' '))
         if len(st.session_state.df_dupes) > 0:
             with st.expander("Deleted Duplicates"):
                 col1, col2 = st.columns(2)
@@ -253,7 +255,7 @@ elif page == "2: Standard Cleaning":
                 with col2:
                     st.subheader("Media Type")
                     st.write(st.session_state.df_dupes['Type'].value_counts())
-                st.dataframe(st.session_state.df_dupes.style.format(format_dict))
+                st.dataframe(st.session_state.df_dupes.style.format(format_dict, na_rep=' '))
     else:
         def yahoo_cleanup(url_string):
             data.loc[data['URL'].str.contains(url_string, na=False), "Outlet"] = "Yahoo! News"
@@ -460,7 +462,7 @@ elif page == "2: Standard Cleaning":
 elif page == "3: Impressions - Outliers":
     traditional = st.session_state.df_traditional
 
-    # TODO: Statistical fill improvement, eg by type
+    # TODO: STATISTICAL FILL IMPROVEMENT, eg by type
     # How to handle type with no impressions? if nan: 0 or 10
     # Will this be good on small data sets?
     # Should different sized data sets recommend different approaches? Why?
@@ -491,7 +493,7 @@ elif page == "3: Impressions - Outliers":
         outliers = traditional[['Outlet', 'Type', 'Impressions', 'Headline', 'URL', 'Country']].nlargest(100,
                                                                                                          'Impressions')
         outliers.index.name = 'Row'
-        st.dataframe(outliers.style.format(format_dict))
+        st.dataframe(outliers.style.format(format_dict, na_rep=' '))
         outlier_index = outliers.index.values.tolist()
 
         with st.form("Update Outliers", clear_on_submit=True):
@@ -549,37 +551,40 @@ elif page == "4: Impressions - Fill Blanks":
             seventeenth_percentile = "{:,}".format(int(traditional.Impressions.quantile(0.17)))
             fifteenth_percentile = "{:,}".format(int(traditional.Impressions.quantile(0.15)))
             decile = "{:,}".format(int(traditional.Impressions.quantile(0.1)))
+            fifth_percentile = "{:,}".format(int(traditional.Impressions.quantile(0.05)))
 
             st.markdown(f"#### MISSING: {blank_impressions}")
             st.write("*************")
 
             col1, col2 = st.columns(2)
             with col1:
-
-                st.write(f"Average: {mean}")
-                st.write(f"Median: {median}")
-                st.write(f"Tercile: {tercile}")
-                st.write(f"Quartile: {quartile}")
-                st.write(f"20th Percentile: {twentieth_percentile}")
-                st.write(f"18th Percentile: {eighteenth_percentile}")
-                st.write(f"17th Percentile: {seventeenth_percentile}")
-                st.write(f"15th Percentile: {fifteenth_percentile}")
-                st.write(f"Decile: {decile}")
+                st.subheader("Statistical Levels")
+                # st.write(f"Average: {mean}")
+                # st.write(f"Median: {median}")
+                # st.write(f"Tercile: {tercile}")
+                st.write(f"25th percentile: {quartile}")
+                st.write(f"20th percentile: {twentieth_percentile}")
+                # st.write(f"18th Percentile: {eighteenth_percentile}")
+                # st.write(f"17th Percentile: {seventeenth_percentile}")
+                st.write(f"15th percentile: {fifteenth_percentile}")
+                st.write(f"10th percentile: {decile}")
+                st.write(f"5th percentile: {fifth_percentile}")
 
             with col2:
                 filldict = {
-                    'Tercile': int(traditional.Impressions.quantile(0.33)),
-                    'Quartile': int(traditional.Impressions.quantile(0.25)),
+                    # 'Tercile': int(traditional.Impressions.quantile(0.33)),
+                    '25th percentile': int(traditional.Impressions.quantile(0.25)),
                     '20th percentile': int(traditional.Impressions.quantile(0.2)),
-                    '18th percentile': int(traditional.Impressions.quantile(0.18)),
-                    '17th percentile': int(traditional.Impressions.quantile(0.17)),
+                    # '18th percentile': int(traditional.Impressions.quantile(0.18)),
+                    # '17th percentile': int(traditional.Impressions.quantile(0.17)),
                     '15th percentile': int(traditional.Impressions.quantile(0.15)),
-                    'Decile': int(traditional.Impressions.quantile(0.1))
+                    '10th percentile': int(traditional.Impressions.quantile(0.1)),
+                    '5th percentile': int(traditional.Impressions.quantile(0.05))
                 }
                 with st.form('Fill Blanks'):
                     st.subheader("Fill Blank Impressions")
                     fill_blank_impressions_with = st.radio('Pick your statistical fill value: ', filldict.keys(),
-                                                           index=5)
+                                                           index=4)
                     submitted = st.form_submit_button("Fill Blanks")
                     if submitted:
                         traditional[['Impressions']] = traditional[['Impressions']].fillna(
@@ -897,7 +902,7 @@ elif page == "6: Authors - Outlets":
                 outlets_in_coverage_list = outlets_in_coverage_list.insert(0, "Freelance")
                 outlets_in_coverage = outlets_in_coverage.rename_axis('Outlet').reset_index(name='Hits')
 
-                if len(outlets_in_coverage) > 5:
+                if len(outlets_in_coverage) > 7:
                     st.dataframe(outlets_in_coverage.style.apply(
                     lambda x: ['background: goldenrod; color: black' if v in db_outlets else "" for v in x],
                     axis=1))
@@ -937,7 +942,7 @@ elif page == "6: Authors - Outlets":
                                                                 columns=['Name', 'Title', 'Outlet', 'Country'])
                     matched_authors.loc[matched_authors.Outlet == "[Freelancer]", "Outlet"] = "Freelance"
 
-                    if len(matched_authors) > 5:
+                    if len(matched_authors) > 7:
                         st.dataframe(matched_authors.style.apply(lambda x: [
                         'background: goldenrod; color: black' if v in outlets_in_coverage.Outlet.tolist() else "" for v
                         in x], axis=1).apply(name_match, axis=0, subset='Name'))
@@ -987,15 +992,15 @@ elif page == "6: Authors - Outlets":
                     if top_auths_by == 'Mentions':
                         st.table(
                             auth_outlet_table[['Author', 'Outlet', 'Mentions', 'Impressions']].fillna('').sort_values(
-                                ['Mentions', 'Impressions'], ascending=False).head(15).style.format(format_dict))
+                                ['Mentions', 'Impressions'], ascending=False).head(15).style.format(format_dict, na_rep=' '))
                     if top_auths_by == 'Impressions':
                         st.table(
                             auth_outlet_table[['Author', 'Outlet', 'Mentions', 'Impressions']].fillna('').sort_values(
-                                ['Impressions', 'Mentions'], ascending=False).head(15).style.format(format_dict))
+                                ['Impressions', 'Mentions'], ascending=False).head(15).style.format(format_dict, na_rep=' '))
 
                 else:
                     st.table(auth_outlet_table[['Author', 'Mentions', 'Impressions']].fillna('').head(15).style.format(
-                        format_dict))
+                        format_dict, na_rep=' '))
             with col2:
                 st.write(" ")
             with col3:
@@ -1264,8 +1269,8 @@ elif page == "9: Download":
     else:
         export_name = st.session_state.export_name
 
-        # traditional = st.session_state.df_traditional
-        # social = st.session_state.df_social
+        traditional = st.session_state.df_traditional
+        social = st.session_state.df_social
         # dupes = st.session_state.df_dupes
         uncleaned = st.session_state.df_untouched
         auth_outlet_table = st.session_state.auth_outlet_table
@@ -1279,12 +1284,14 @@ elif page == "9: Download":
 
         # Tag exploder
         if "Tags" in st.session_state.df_traditional:
-            st.session_state.df_traditional['Tags'] = st.session_state.df_traditional['Tags'].astype(str)  # needed if column there but all blank
-            st.session_state.df_traditional = st.session_state.df_traditional.join(st.session_state.df_traditional["Tags"].str.get_dummies(sep=",").astype('category'))
+            traditional['Tags'] = traditional['Tags'].astype(str)  # needed if column there but all blank
+            traditional = traditional.join(traditional["Tags"].str.get_dummies(sep=",").astype('category'))
+            # st.session_state.df_traditional = st.session_state.df_traditional.join(st.session_state.df_traditional["Tags"].str.get_dummies(sep=",").astype('category'), how='left', rsuffix='_right')
 
-        if "Tags" in st.session_state.df_social:
-            st.session_state.df_social['Tags'] = st.session_state.df_social['Tags'].astype(str)  # needed if column there but all blank
-            st.session_state.df_social = st.session_state.df_social.join(st.session_state.df_social["Tags"].str.get_dummies(sep=",").astype('category'))
+
+        if "Tags" in social:
+            social['Tags'] = social['Tags'].astype(str)  # needed if column there but all blank
+            social = social.join(social["Tags"].str.get_dummies(sep=",").astype('category'))
 
 
         with st.form("my_form_download"):
@@ -1304,20 +1311,20 @@ elif page == "9: Download":
                     number_format = workbook.add_format({'num_format': '#,##0'})
                     currency_format = workbook.add_format({'num_format': '$#,##0'})
 
-                    if len(st.session_state.df_traditional) > 0:
-                        st.session_state.df_traditional = st.session_state.df_traditional.sort_values(by=['Impressions'], ascending=False)
-                        st.session_state.df_traditional.to_excel(writer, sheet_name='CLEAN TRAD', startrow=1, header=False, index=False)
+                    if len(traditional) > 0:
+                        traditional = traditional.sort_values(by=['Impressions'], ascending=False)
+                        traditional.to_excel(writer, sheet_name='CLEAN TRAD', startrow=1, header=False, index=False)
                         worksheet1 = writer.sheets['CLEAN TRAD']
                         worksheet1.set_tab_color('black')
-                        cleaned_dfs.append((st.session_state.df_traditional, worksheet1))
+                        cleaned_dfs.append((traditional, worksheet1))
                         cleaned_sheets.append(worksheet1)
 
-                    if len(st.session_state.df_social) > 0:
-                        st.session_state.df_social = st.session_state.df_social.sort_values(by=['Impressions'], ascending=False)
-                        st.session_state.df_social.to_excel(writer, sheet_name='CLEAN SOCIAL', startrow=1, header=False, index=False)
+                    if len(social) > 0:
+                        social = social.sort_values(by=['Impressions'], ascending=False)
+                        social.to_excel(writer, sheet_name='CLEAN SOCIAL', startrow=1, header=False, index=False)
                         worksheet2 = writer.sheets['CLEAN SOCIAL']
                         worksheet2.set_tab_color('black')
-                        cleaned_dfs.append((st.session_state.df_social, worksheet2))
+                        cleaned_dfs.append((social, worksheet2))
                         cleaned_sheets.append(worksheet2)
 
                     if len(auth_outlet_table) > 0:
