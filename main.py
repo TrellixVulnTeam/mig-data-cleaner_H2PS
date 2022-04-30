@@ -169,19 +169,10 @@ if page == "1: Getting Started":
             elif submitted:
                 with st.spinner("Converting file format."):
                     st.session_state.df_untouched = pd.read_csv(uploaded_file)
-
-
-                    # data = st.session_state.df_uncleaned
                     st.session_state.df_untouched = st.session_state.df_untouched.dropna(thresh=3)
-
-
                     st.session_state.df_untouched["Mentions"] = 1
-
-
                     st.session_state.df_untouched['Audience Reach'] = st.session_state.df_untouched['Audience Reach'].astype('Int64')
                     st.session_state.df_untouched['AVE'] = st.session_state.df_untouched['AVE'].fillna(0)
-
-
                     st.session_state.export_name = f"{client} - {period} - clean_data.xlsx"
                     st.session_state.df_raw = st.session_state.df_untouched
                     st.session_state.upload_step = True
@@ -198,9 +189,6 @@ elif page == "2: Standard Cleaning":
         st.error('Please upload a CSV before trying this step.')
     elif st.session_state.standard_step:
         st.success("Standard cleaning done!")
-        # traditional = st.session_state.df_traditional
-        # social = st.session_state.df_social
-        # dupes = st.session_state.df_dupes
 
         if len(st.session_state.df_traditional) > 0:
             with st.expander("Traditional"):
@@ -437,14 +425,10 @@ elif page == "2: Standard Cleaning":
                     original_trad_auths = top_x_by_mentions(traditional, "Author")
                     st.session_state.original_trad_auths = original_trad_auths
                     st.session_state.df_traditional = traditional
-                    # st.session_state.df_social = social
-                    # st.session_state.df_dupes = dupes
                     st.session_state.standard_step = True
                     st.experimental_rerun()
 
 elif page == "3: Impressions - Outliers":
-    # traditional = st.session_state.df_traditional
-
     st.title('Impressions - Outliers')
     if st.session_state.upload_step == False:
         st.error('Please upload a CSV before trying this step.')
@@ -472,14 +456,12 @@ elif page == "3: Impressions - Outliers":
             if submitted:
                 for index_number in index_numbers:
                     st.session_state.df_traditional.loc[int(index_number), "Impressions"] = new_impressions_value
-                # st.session_state.df_traditional = traditional
-                # st.session_state.outliers = True
+
                 st.experimental_rerun()
 
 
 elif page == "4: Impressions - Fill Blanks":
     st.title('Impressions - Fill Blanks')
-    # traditional = st.session_state.df_traditional
 
     if st.session_state.upload_step == False:
         st.error('Please upload a CSV before trying this step.')
@@ -493,12 +475,7 @@ elif page == "4: Impressions - Fill Blanks":
     elif st.session_state.filled == True:
         st.success("Missing impressions fill complete!")
 
-    # elif st.session_state.outliers == False:
-    #     st.warning('Please confirm outliers step is complete before running this step.')
-    #     done_outliers = st.button('Done with outliers')
-    #     if done_outliers:
-    #         st.session_state.outliers = True
-    #         st.experimental_rerun()
+
         # TODO: STATISTICAL FILL IMPROVEMENT, eg by type
         # How to handle type with no impressions? if nan: 0 or 10
         # Will this be good on small data sets?
@@ -547,24 +524,17 @@ elif page == "4: Impressions - Fill Blanks":
             col1, col2 = st.columns(2)
             with col1:
                 st.subheader("Statistical Levels")
-                # st.write(f"Average: {mean}")
-                # st.write(f"Median: {median}")
-                # st.write(f"Tercile: {tercile}")
+
                 st.write(f"25th percentile: {quartile}")
                 st.write(f"20th percentile: {twentieth_percentile}")
-                # st.write(f"18th Percentile: {eighteenth_percentile}")
-                # st.write(f"17th Percentile: {seventeenth_percentile}")
                 st.write(f"15th percentile: {fifteenth_percentile}")
                 st.write(f"10th percentile: {decile}")
                 st.write(f"5th percentile: {fifth_percentile}")
 
             with col2:
                 filldict = {
-                    # 'Tercile': int(traditional.Impressions.quantile(0.33)),
                     '25th percentile': int(st.session_state.df_traditional.Impressions.quantile(0.25)),
                     '20th percentile': int(st.session_state.df_traditional.Impressions.quantile(0.2)),
-                    # '18th percentile': int(traditional.Impressions.quantile(0.18)),
-                    # '17th percentile': int(traditional.Impressions.quantile(0.17)),
                     '15th percentile': int(st.session_state.df_traditional.Impressions.quantile(0.15)),
                     '10th percentile': int(st.session_state.df_traditional.Impressions.quantile(0.1)),
                     '5th percentile': int(st.session_state.df_traditional.Impressions.quantile(0.05))
@@ -578,7 +548,6 @@ elif page == "4: Impressions - Fill Blanks":
                         st.session_state.df_traditional[['Impressions']] = st.session_state.df_traditional[['Impressions']].fillna(
                             filldict[fill_blank_impressions_with])
                         st.session_state.df_traditional['Impressions'] = st.session_state.df_traditional['Impressions'].astype(int)
-                        # st.session_state.df_traditional = traditional
                         st.session_state.filled = True
                         st.experimental_rerun()
 
@@ -586,7 +555,6 @@ elif page == "4: Impressions - Fill Blanks":
 
 elif page == "5: Authors - Missing":
     st.title('Authors - Missing')
-    # traditional = st.session_state.df_traditional
     original_trad_auths = st.session_state.original_trad_auths
 
     if st.session_state.upload_step == False:
@@ -727,8 +695,6 @@ elif page == "6: Authors - Outlets":
     from unidecode import unidecode
     import requests
     from requests.structures import CaseInsensitiveDict
-
-    # traditional = st.session_state.df_traditional
 
     st.session_state.df_traditional.Mentions = st.session_state.df_traditional.Mentions.astype('int')
 
@@ -1150,10 +1116,6 @@ elif page == "8: Review":
     elif st.session_state.standard_step == False:
         st.error('Please run the Standard Cleaning before trying this step.')
     else:
-        # traditional = st.session_state.df_traditional
-        # social = st.session_state.df_social
-        # dupes = st.session_state.df_dupes
-
         if len(st.session_state.df_traditional) > 0:
             with st.expander("Traditional"):
                 col1, col2 = st.columns(2)
@@ -1274,7 +1236,6 @@ elif page == "9: Download":
         if "Tags" in st.session_state.df_traditional:
             traditional['Tags'] = traditional['Tags'].astype(str)  # needed if column there but all blank
             traditional = traditional.join(traditional["Tags"].str.get_dummies(sep=",").astype('category'), how='left', rsuffix=' (tag)')
-            # st.session_state.df_traditional = st.session_state.df_traditional.join(st.session_state.df_traditional["Tags"].str.get_dummies(sep=",").astype('category'), how='left', rsuffix='_right')
 
 
         if "Tags" in social:
@@ -1338,7 +1299,7 @@ elif page == "9: Download":
                         cleaned_sheets.append(worksheet3)
 
                     uncleaned.to_excel(writer, sheet_name='RAW', header=True, index=False)
-                    # TODO: drop mentions from RAW tab; for top row: freeze, align left, no borders
+                    # TODO: RAW tab - drop mentions; for top row: freeze, align left, no borders
                     worksheet4 = writer.sheets['RAW']
                     worksheet4.set_tab_color('#c26f4f')
 
@@ -1360,17 +1321,7 @@ elif page == "9: Download":
                         sheet.set_column('G:G', 40, None)  # headline
                         sheet.set_column('Q:Q', 12, currency_format)  # AVE
                         sheet.freeze_panes(1, 0)
-                        # sheet.set_default_row(22)
-                        # sheet.set_column('A:A', 12, None)  # date
-                        # sheet.set_column('B:B', 10, time_format)  # time
-                        # sheet.set_column('C:C', 22, None)  # outlet
-                        # sheet.set_column('D:D', 12, None)  # type
-                        # sheet.set_column('E:E', 12, None)  # author
-                        # sheet.set_column('F:F', 0, None)  # mentions
-                        # sheet.set_column('G:G', 12, number_format)  # impressions
-                        # sheet.set_column('H:H', 40, None)  # headline
-                        # sheet.set_column('R:R', 12, currency_format)  # AVE
-                        # sheet.freeze_panes(1, 0)
+
                     writer.save()
 
         if submitted:
