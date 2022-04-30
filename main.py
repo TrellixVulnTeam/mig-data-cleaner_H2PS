@@ -25,48 +25,30 @@ def top_x_by_mentions(df, column_name):
 
 format_dict = {'AVE': '${0:,.0f}', 'Audience Reach': '{:,d}', 'Impressions': '{:,d}'}
 
+# Initialize Session State Variables
 if 'page' not in st.session_state:
     st.session_state.page = '1: Getting Started'
-if 'export_name' not in st.session_state:
-    st.session_state.export_name = ''
-if 'df_raw' not in st.session_state: # this is the one that becomes the working thing
-    st.session_state.df_raw = None
-if 'df_untouched' not in st.session_state: # this one is not touched
-    st.session_state.df_untouched = None
-if 'df_traditional' not in st.session_state:
-    st.session_state.df_traditional = pd.DataFrame()
-if 'df_social' not in st.session_state:
-    st.session_state.df_social = pd.DataFrame()
-if 'df_dupes' not in st.session_state:
-    st.session_state.df_dupes = pd.DataFrame()
-if 'upload_step' not in st.session_state:
-    st.session_state.upload_step = False
-if 'standard_step' not in st.session_state:
-    st.session_state.standard_step = False
-if 'outliers' not in st.session_state:
-    st.session_state.outliers = False
-if 'original_auths' not in st.session_state:
-    st.session_state.original_auths = pd.DataFrame()
-if 'counter' not in st.session_state:
-    st.session_state.counter = 0
-if 'translated_headline' not in st.session_state:
-    st.session_state.translated_headline = False
-if 'translated_summary' not in st.session_state:
-    st.session_state.translated_summary = False
-if 'translated_snippet' not in st.session_state:
-    st.session_state.translated_snippet = False
-if 'filled' not in st.session_state:
-    st.session_state.filled = False
-if 'original_trad_auths' not in st.session_state:
-    st.session_state.original_trad_auths = pd.DataFrame()
-if 'author_outlets' not in st.session_state:
-    st.session_state.author_outlets = None
-if 'auth_outlet_skipped' not in st.session_state:
-    st.session_state.auth_outlet_skipped = 0
-if 'auth_outlet_table' not in st.session_state:
-    st.session_state.auth_outlet_table = pd.DataFrame()
 if 'top_auths_by' not in st.session_state:
     st.session_state.top_auths_by = 'Mentions'
+if 'export_name' not in st.session_state:
+    st.session_state.export_name = ''
+
+df_vars = ['df_traditional', 'df_social', 'df_dupes', 'original_trad_auths', 'auth_outlet_table', 'original_auths', 'df_raw', 'df_untouched', 'author_outlets']
+for _ in df_vars:
+    if _ not in st.session_state:
+        st.session_state[_] = pd.DataFrame()
+
+step_vars = ['upload_step', 'standard_step', 'translated_headline', 'translated_summary', 'translated_snippet', 'filled'] #outliers',
+for _ in step_vars:
+    if _ not in st.session_state:
+        st.session_state[_] = False
+
+counter_vars = ['counter', 'auth_outlet_skipped']
+for _ in counter_vars:
+    if _ not in st.session_state:
+        st.session_state[_] = 0
+
+
 
 # Sidebar and page selector
 st.sidebar.image('https://agilitypr.news/images/Agility-centered.svg', width=200)
@@ -104,6 +86,7 @@ if page == "1: Getting Started":
     import io
 
     # data = st.session_state.df_uncleaned
+    # TODO: blank author column creates an error with top X function
 
 
     if st.session_state.upload_step == True:
@@ -460,24 +443,7 @@ elif page == "2: Standard Cleaning":
                     st.experimental_rerun()
 
 elif page == "3: Impressions - Outliers":
-    traditional = st.session_state.df_traditional
-
-    # TODO: STATISTICAL FILL IMPROVEMENT, eg by type
-    # How to handle type with no impressions? if nan: 0 or 10
-    # Will this be good on small data sets?
-    # Should different sized data sets recommend different approaches? Why?
-    # Database API search? No - juice aint worth the squeeze
-    # HALF DECILE BY TYPE FORMULA:  (data.groupby(['Type'])['Impressions'].quantile(.1))/2
-    # Custom fill number input?
-    idea = '''
-        show a table by media type 
-        with columns for
-            - # known
-            - # blank
-            - min, 1/2 decile, quantiles 5, 10, 15
-        form with selection interface for each type, preset to half-decile
-    '''
-
+    # traditional = st.session_state.df_traditional
 
     st.title('Impressions - Outliers')
     if st.session_state.upload_step == False:
@@ -485,12 +451,12 @@ elif page == "3: Impressions - Outliers":
 
     elif st.session_state.standard_step == False:
         st.error('Please run the Standard Cleaning before trying this step.')
-    elif len(traditional) == 0:
+    elif len(st.session_state.df_traditional) == 0:
         st.subheader("No traditional media in data. Skip to next step.")
 
     else:
         st.subheader('Check highest impressions numbers:')
-        outliers = traditional[['Outlet', 'Type', 'Impressions', 'Headline', 'URL', 'Country']].nlargest(100,
+        outliers = st.session_state.df_traditional[['Outlet', 'Type', 'Impressions', 'Headline', 'URL', 'Country']].nlargest(250,
                                                                                                          'Impressions')
         outliers.index.name = 'Row'
         st.dataframe(outliers.style.format(format_dict, na_rep=' '))
@@ -505,15 +471,15 @@ elif page == "3: Impressions - Outliers":
             submitted = st.form_submit_button("Go!")
             if submitted:
                 for index_number in index_numbers:
-                    traditional.loc[int(index_number), "Impressions"] = new_impressions_value
-                st.session_state.df_traditional = traditional
-                st.session_state.outliers = True
+                    st.session_state.df_traditional.loc[int(index_number), "Impressions"] = new_impressions_value
+                # st.session_state.df_traditional = traditional
+                # st.session_state.outliers = True
                 st.experimental_rerun()
 
 
 elif page == "4: Impressions - Fill Blanks":
     st.title('Impressions - Fill Blanks')
-    traditional = st.session_state.df_traditional
+    # traditional = st.session_state.df_traditional
 
     if st.session_state.upload_step == False:
         st.error('Please upload a CSV before trying this step.')
@@ -521,37 +487,59 @@ elif page == "4: Impressions - Fill Blanks":
     elif st.session_state.standard_step == False:
         st.error('Please run the Standard Cleaning before trying this step.')
 
-    elif len(traditional) == 0:
+    elif len(st.session_state.df_traditional) == 0:
         st.warning("No traditional media in data. Skip to next step.")
 
     elif st.session_state.filled == True:
         st.success("Missing impressions fill complete!")
 
-    elif st.session_state.outliers == False:
-        st.warning('Please confirm outliers step is complete before running this step.')
-        done_outliers = st.button('Done with outliers')
-        if done_outliers:
-            st.session_state.outliers = True
-            st.experimental_rerun()
+    # elif st.session_state.outliers == False:
+    #     st.warning('Please confirm outliers step is complete before running this step.')
+    #     done_outliers = st.button('Done with outliers')
+    #     if done_outliers:
+    #         st.session_state.outliers = True
+    #         st.experimental_rerun()
+        # TODO: STATISTICAL FILL IMPROVEMENT, eg by type
+        # How to handle type with no impressions? if nan: 0 or 10
+        # Will this be good on small data sets?
+        # Should different sized data sets recommend different approaches? Why?
+        # Database API search? No - juice aint worth the squeeze
+        # HALF DECILE BY TYPE FORMULA:  (data.groupby(['Type'])['Impressions'].quantile(.1))/2
+        # Custom fill number input?
+        idea1 = '''
+            show a table by media type 
+            with columns for
+                - # known
+                - # blank
+                - min, 1/2 decile, quantiles 5, 10, 15
+            form with selection interface for each type, preset to half-decile
+        '''
+        idea2 = '''
+            show a table by media type 
+            with columns for
+                - # known
+                - # blank
+                - selectbox to switch and refresh view (int(1/2 decile), quantiles 5, 10, 15) 
+        '''
 
     else:
-        blank_impressions = traditional['Impressions'].isna().sum()
+        blank_impressions = st.session_state.df_traditional['Impressions'].isna().sum()
 
         if blank_impressions == 0:
             st.info('No missing impressions numbers in data')
 
         else:
 
-            mean = "{:,}".format(int(traditional.Impressions.mean()))
-            median = "{:,}".format(int(traditional.Impressions.median()))
-            tercile = "{:,}".format(int(traditional.Impressions.quantile(0.33)))
-            quartile = "{:,}".format(int(traditional.Impressions.quantile(0.25)))
-            twentieth_percentile = "{:,}".format(int(traditional.Impressions.quantile(0.2)))
-            eighteenth_percentile = "{:,}".format(int(traditional.Impressions.quantile(0.18)))
-            seventeenth_percentile = "{:,}".format(int(traditional.Impressions.quantile(0.17)))
-            fifteenth_percentile = "{:,}".format(int(traditional.Impressions.quantile(0.15)))
-            decile = "{:,}".format(int(traditional.Impressions.quantile(0.1)))
-            fifth_percentile = "{:,}".format(int(traditional.Impressions.quantile(0.05)))
+            mean = "{:,}".format(int(st.session_state.df_traditional.Impressions.mean()))
+            median = "{:,}".format(int(st.session_state.df_traditional.Impressions.median()))
+            tercile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.33)))
+            quartile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.25)))
+            twentieth_percentile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.2)))
+            eighteenth_percentile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.18)))
+            seventeenth_percentile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.17)))
+            fifteenth_percentile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.15)))
+            decile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.1)))
+            fifth_percentile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.05)))
 
             st.markdown(f"#### MISSING: {blank_impressions}")
             st.write("*************")
@@ -573,13 +561,13 @@ elif page == "4: Impressions - Fill Blanks":
             with col2:
                 filldict = {
                     # 'Tercile': int(traditional.Impressions.quantile(0.33)),
-                    '25th percentile': int(traditional.Impressions.quantile(0.25)),
-                    '20th percentile': int(traditional.Impressions.quantile(0.2)),
+                    '25th percentile': int(st.session_state.df_traditional.Impressions.quantile(0.25)),
+                    '20th percentile': int(st.session_state.df_traditional.Impressions.quantile(0.2)),
                     # '18th percentile': int(traditional.Impressions.quantile(0.18)),
                     # '17th percentile': int(traditional.Impressions.quantile(0.17)),
-                    '15th percentile': int(traditional.Impressions.quantile(0.15)),
-                    '10th percentile': int(traditional.Impressions.quantile(0.1)),
-                    '5th percentile': int(traditional.Impressions.quantile(0.05))
+                    '15th percentile': int(st.session_state.df_traditional.Impressions.quantile(0.15)),
+                    '10th percentile': int(st.session_state.df_traditional.Impressions.quantile(0.1)),
+                    '5th percentile': int(st.session_state.df_traditional.Impressions.quantile(0.05))
                 }
                 with st.form('Fill Blanks'):
                     st.subheader("Fill Blank Impressions")
@@ -587,10 +575,10 @@ elif page == "4: Impressions - Fill Blanks":
                                                            index=4)
                     submitted = st.form_submit_button("Fill Blanks")
                     if submitted:
-                        traditional[['Impressions']] = traditional[['Impressions']].fillna(
+                        st.session_state.df_traditional[['Impressions']] = st.session_state.df_traditional[['Impressions']].fillna(
                             filldict[fill_blank_impressions_with])
-                        traditional['Impressions'] = traditional['Impressions'].astype(int)
-                        st.session_state.df_traditional = traditional
+                        st.session_state.df_traditional['Impressions'] = st.session_state.df_traditional['Impressions'].astype(int)
+                        # st.session_state.df_traditional = traditional
                         st.session_state.filled = True
                         st.experimental_rerun()
 
@@ -1285,13 +1273,13 @@ elif page == "9: Download":
         # Tag exploder
         if "Tags" in st.session_state.df_traditional:
             traditional['Tags'] = traditional['Tags'].astype(str)  # needed if column there but all blank
-            traditional = traditional.join(traditional["Tags"].str.get_dummies(sep=",").astype('category'))
+            traditional = traditional.join(traditional["Tags"].str.get_dummies(sep=",").astype('category'), how='left', rsuffix=' (tag)')
             # st.session_state.df_traditional = st.session_state.df_traditional.join(st.session_state.df_traditional["Tags"].str.get_dummies(sep=",").astype('category'), how='left', rsuffix='_right')
 
 
         if "Tags" in social:
             social['Tags'] = social['Tags'].astype(str)  # needed if column there but all blank
-            social = social.join(social["Tags"].str.get_dummies(sep=",").astype('category'))
+            social = social.join(social["Tags"].str.get_dummies(sep=",").astype('category'), how='left', rsuffix=' (tag)')
 
 
         with st.form("my_form_download"):
