@@ -506,50 +506,86 @@ elif page == "4: Impressions - Fill Blanks":
             st.info('No missing impressions numbers in data')
 
         else:
+            # media_type_list = st.session_state.df_traditional.Type.unique().tolist()
 
-            mean = "{:,}".format(int(st.session_state.df_traditional.Impressions.mean()))
-            median = "{:,}".format(int(st.session_state.df_traditional.Impressions.median()))
-            tercile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.33)))
-            quartile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.25)))
-            twentieth_percentile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.2)))
-            eighteenth_percentile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.18)))
-            seventeenth_percentile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.17)))
-            fifteenth_percentile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.15)))
-            decile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.1)))
-            fifth_percentile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.05)))
+            # for media_type in media_type_list:
+            #     st.write(f"Null {media_type}: {st.session_state.df_traditional.loc[st.session_state.df_traditional['Type'] == media_type].Impressions.isna().sum()}")
 
-            st.markdown(f"#### MISSING: {blank_impressions}")
-            st.write("*************")
 
-            col1, col2 = st.columns(2)
-            with col1:
-                st.subheader("Statistical Levels")
+            percentile_list = list(range(5,16))
+            percentile_selected = st.select_slider('Percentile fill', percentile_list, 5)
 
-                st.write(f"25th percentile: {quartile}")
-                st.write(f"20th percentile: {twentieth_percentile}")
-                st.write(f"15th percentile: {fifteenth_percentile}")
-                st.write(f"10th percentile: {decile}")
-                st.write(f"5th percentile: {fifth_percentile}")
+            fill_by_type_dict = st.session_state.df_traditional.groupby(['Type'])['Impressions'].quantile(percentile_selected/100).to_dict()
 
-            with col2:
-                filldict = {
-                    '25th percentile': int(st.session_state.df_traditional.Impressions.quantile(0.25)),
-                    '20th percentile': int(st.session_state.df_traditional.Impressions.quantile(0.2)),
-                    '15th percentile': int(st.session_state.df_traditional.Impressions.quantile(0.15)),
-                    '10th percentile': int(st.session_state.df_traditional.Impressions.quantile(0.1)),
-                    '5th percentile': int(st.session_state.df_traditional.Impressions.quantile(0.05))
-                }
-                with st.form('Fill Blanks'):
-                    st.subheader("Fill Blank Impressions")
-                    fill_blank_impressions_with = st.radio('Pick your statistical fill value: ', filldict.keys(),
-                                                           index=4)
-                    submitted = st.form_submit_button("Fill Blanks")
-                    if submitted:
-                        st.session_state.df_traditional[['Impressions']] = st.session_state.df_traditional[['Impressions']].fillna(
-                            filldict[fill_blank_impressions_with])
-                        st.session_state.df_traditional['Impressions'] = st.session_state.df_traditional['Impressions'].astype(int)
-                        st.session_state.filled = True
-                        st.experimental_rerun()
+            for k, v in fill_by_type_dict.items():
+                fill_by_type_dict[k] = int(v)
+
+            fill_by_type_table = pd.DataFrame.from_dict(fill_by_type_dict, orient='index', columns=['Fill Value'])
+
+            st.table(fill_by_type_table)
+
+            media_type_list = fill_by_type_table.index.tolist()
+            # for media_type in media_type_list:
+            #     st.write(f"Null {media_type}: {st.session_state.df_traditional.loc[st.session_state.df_traditional['Type'] == media_type].Impressions.isna().sum()}")
+
+            for item in media_type_list:
+                st.write(item, st.session_state.df_traditional.loc[st.session_state.df_traditional['Type'] == item].Impressions.isna().sum(), " / ", st.session_state.df_traditional['Type'].value_counts()[item])
+
+            with st.form('Fill Blanks'):
+                st.subheader("Fill Blank Impressions")
+                # fill_blank_impressions_with = st.radio('Pick your statistical fill value: ', filldict.keys(), index=4)
+                submitted = st.form_submit_button("Fill Blanks")
+                if submitted:
+                    st.session_state.df_traditional[['Impressions']] = st.session_state.df_traditional[['Impressions']].fillna(
+                        filldict[fill_blank_impressions_with])
+                    st.session_state.df_traditional['Impressions'] = st.session_state.df_traditional['Impressions'].astype(int)
+                    st.session_state.filled = True
+                    st.experimental_rerun()
+
+
+            # mean = "{:,}".format(int(st.session_state.df_traditional.Impressions.mean()))
+            # median = "{:,}".format(int(st.session_state.df_traditional.Impressions.median()))
+            # tercile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.33)))
+            # quartile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.25)))
+            # twentieth_percentile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.2)))
+            # eighteenth_percentile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.18)))
+            # seventeenth_percentile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.17)))
+            # fifteenth_percentile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.15)))
+            # decile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.1)))
+            # fifth_percentile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.05)))
+            #
+            # st.markdown(f"#### MISSING: {blank_impressions}")
+            # st.write("*************")
+            #
+            # col1, col2 = st.columns(2)
+            # with col1:
+            #     st.subheader("Statistical Levels")
+            #
+            #     st.write(f"25th percentile: {quartile}")
+            #     st.write(f"20th percentile: {twentieth_percentile}")
+            #     st.write(f"15th percentile: {fifteenth_percentile}")
+            #     st.write(f"10th percentile: {decile}")
+            #     st.write(f"5th percentile: {fifth_percentile}")
+            #
+            # with col2:
+            #     filldict = {
+            #         '25th percentile': int(st.session_state.df_traditional.Impressions.quantile(0.25)),
+            #         '20th percentile': int(st.session_state.df_traditional.Impressions.quantile(0.2)),
+            #         '15th percentile': int(st.session_state.df_traditional.Impressions.quantile(0.15)),
+            #         '10th percentile': int(st.session_state.df_traditional.Impressions.quantile(0.1)),
+            #         '5th percentile': int(st.session_state.df_traditional.Impressions.quantile(0.05))
+            #     }
+            #     with st.form('Fill Blanks'):
+            #         st.subheader("Fill Blank Impressions")
+            #         fill_blank_impressions_with = st.radio('Pick your statistical fill value: ', filldict.keys(),
+            #                                                index=4)
+            #         submitted = st.form_submit_button("Fill Blanks")
+            #         if submitted:
+            #             st.session_state.df_traditional[['Impressions']] = st.session_state.df_traditional[['Impressions']].fillna(
+            #                 filldict[fill_blank_impressions_with])
+            #             st.session_state.df_traditional['Impressions'] = st.session_state.df_traditional['Impressions'].astype(int)
+            #             st.session_state.filled = True
+            #             st.experimental_rerun()
 
 
 
