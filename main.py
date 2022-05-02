@@ -26,12 +26,18 @@ def top_x_by_mentions(df, column_name):
 format_dict = {'AVE': '${0:,.0f}', 'Audience Reach': '{:,d}', 'Impressions': '{:,d}'}
 
 # Initialize Session State Variables
-if 'page' not in st.session_state:
-    st.session_state.page = '1: Getting Started'
-if 'top_auths_by' not in st.session_state:
-    st.session_state.top_auths_by = 'Mentions'
-if 'export_name' not in st.session_state:
-    st.session_state.export_name = ''
+
+# if 'page' not in st.session_state:
+#     st.session_state.page = '1: Getting Started'
+# if 'top_auths_by' not in st.session_state:
+#     st.session_state.top_auths_by = 'Mentions'
+# if 'export_name' not in st.session_state:
+#     st.session_state.export_name = ''
+
+string_vars = {'page': '1: Getting Started', 'top_auths_by': 'Mentions', 'export_name': ''}
+for key, value in string_vars.items():
+  if key not in st.session_state:
+      st.session_state[key] = value
 
 df_vars = ['df_traditional', 'df_social', 'df_dupes', 'original_trad_auths', 'auth_outlet_table', 'original_auths', 'df_raw', 'df_untouched', 'author_outlets']
 for _ in df_vars:
@@ -462,6 +468,7 @@ elif page == "3: Impressions - Outliers":
 
 elif page == "4: Impressions - Fill Blanks":
     st.title('Impressions - Fill Blanks')
+    # st.session_state.filled = False
 
     if st.session_state.upload_step == False:
         st.error('Please upload a CSV before trying this step.')
@@ -474,32 +481,21 @@ elif page == "4: Impressions - Fill Blanks":
 
     elif st.session_state.filled == True:
         st.success("Missing impressions fill complete!")
+        with st.expander('Dataframe'):
+            st.dataframe(st.session_state.df_traditional)
 
 
         # TODO: STATISTICAL FILL IMPROVEMENT, eg by type
         # How to handle type with no impressions? if nan: 0 or 10
-        # Will this be good on small data sets?
+        # Will this be good on small data sets? Or small categories, eg 2 known TV and 5 unknown
         # Should different sized data sets recommend different approaches? Why?
-        # Database API search? No - juice aint worth the squeeze
+        # Maybe set number by media type instead of calculation?
         # HALF DECILE BY TYPE FORMULA:  (data.groupby(['Type'])['Impressions'].quantile(.1))/2
         # Custom fill number input?
-        idea1 = '''
-            show a table by media type 
-            with columns for
-                - # known
-                - # blank
-                - min, 1/2 decile, quantiles 5, 10, 15
-            form with selection interface for each type, preset to half-decile
-        '''
-        idea2 = '''
-            show a table by media type 
-            with columns for
-                - # known
-                - # blank
-                - selectbox to switch and refresh view (int(1/2 decile), quantiles 5, 10, 15) 
-        '''
+
 
     else:
+        # traditional = st.session_state.df_traditional
         blank_impressions = st.session_state.df_traditional['Impressions'].isna().sum()
 
         if blank_impressions == 0:
@@ -511,82 +507,45 @@ elif page == "4: Impressions - Fill Blanks":
             # for media_type in media_type_list:
             #     st.write(f"Null {media_type}: {st.session_state.df_traditional.loc[st.session_state.df_traditional['Type'] == media_type].Impressions.isna().sum()}")
 
-
-            percentile_list = list(range(5,16))
-            percentile_selected = st.select_slider('Percentile fill', percentile_list, 5)
+            percentile_selected = st.select_slider('Percentile fill', range(0,21), 5)
 
             fill_by_type_dict = st.session_state.df_traditional.groupby(['Type'])['Impressions'].quantile(percentile_selected/100).to_dict()
 
             for k, v in fill_by_type_dict.items():
                 fill_by_type_dict[k] = int(v)
 
-            fill_by_type_table = pd.DataFrame.from_dict(fill_by_type_dict, orient='index', columns=['Fill Value'])
-
-            st.table(fill_by_type_table)
+            fill_by_type_table = pd.DataFrame.from_dict(fill_by_type_dict, orient='index', columns=[f'Fill Value at {percentile_selected}%'])
 
             media_type_list = fill_by_type_table.index.tolist()
-            # for media_type in media_type_list:
-            #     st.write(f"Null {media_type}: {st.session_state.df_traditional.loc[st.session_state.df_traditional['Type'] == media_type].Impressions.isna().sum()}")
 
-            for item in media_type_list:
-                st.write(item, st.session_state.df_traditional.loc[st.session_state.df_traditional['Type'] == item].Impressions.isna().sum(), " / ", st.session_state.df_traditional['Type'].value_counts()[item])
+            missing = [st.session_state.df_traditional.loc[st.session_state.df_traditional['Type'] == item].Impressions.isna().sum() for item in media_type_list]
+            known = [st.session_state.df_traditional['Type'].value_counts()[item] for item in media_type_list]
+            fill_by_type_table.insert(0, 'Missing', missing)
+            fill_by_type_table.insert(1, 'Known', known)
+            fill_by_type_table = fill_by_type_table[fill_by_type_table["Missing"] > 0]
+
+            st.subheader('Media types with missing impressions values')
+            fill_format_dict = {'Known': '{:,d}', f'Fill Value at {percentile_selected}%': '{:,d}'}
+            st.table(fill_by_type_table.style.format(fill_format_dict))
+
+            st.write(fill_by_type_dict) # USE VALUES FROM THIS DICT TO FILL NA BY TYPE
+
 
             with st.form('Fill Blanks'):
                 st.subheader("Fill Blank Impressions")
-                # fill_blank_impressions_with = st.radio('Pick your statistical fill value: ', filldict.keys(), index=4)
                 submitted = st.form_submit_button("Fill Blanks")
                 if submitted:
-                    st.session_state.df_traditional[['Impressions']] = st.session_state.df_traditional[['Impressions']].fillna(
-                        filldict[fill_blank_impressions_with])
-                    st.session_state.df_traditional['Impressions'] = st.session_state.df_traditional['Impressions'].astype(int)
+
+                    # data.loc[(data['Type'] == 'ONLINE NEWS') & data['Impressions'].isna(), 'Impressions'] = 500
+                    for k, v in fill_by_type_dict.items():
+                        st.session_state.df_traditional.loc[(st.session_state.df_traditional['Type'] == k) & st.session_state.df_traditional['Impressions'].isna(), 'Impressions'] = v
+
                     st.session_state.filled = True
+                    # st.session_state.df_traditional = traditional
                     st.experimental_rerun()
 
-
-            # mean = "{:,}".format(int(st.session_state.df_traditional.Impressions.mean()))
-            # median = "{:,}".format(int(st.session_state.df_traditional.Impressions.median()))
-            # tercile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.33)))
-            # quartile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.25)))
-            # twentieth_percentile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.2)))
-            # eighteenth_percentile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.18)))
-            # seventeenth_percentile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.17)))
-            # fifteenth_percentile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.15)))
-            # decile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.1)))
-            # fifth_percentile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.05)))
-            #
-            # st.markdown(f"#### MISSING: {blank_impressions}")
-            # st.write("*************")
-            #
-            # col1, col2 = st.columns(2)
-            # with col1:
-            #     st.subheader("Statistical Levels")
-            #
-            #     st.write(f"25th percentile: {quartile}")
-            #     st.write(f"20th percentile: {twentieth_percentile}")
-            #     st.write(f"15th percentile: {fifteenth_percentile}")
-            #     st.write(f"10th percentile: {decile}")
-            #     st.write(f"5th percentile: {fifth_percentile}")
-            #
-            # with col2:
-            #     filldict = {
-            #         '25th percentile': int(st.session_state.df_traditional.Impressions.quantile(0.25)),
-            #         '20th percentile': int(st.session_state.df_traditional.Impressions.quantile(0.2)),
-            #         '15th percentile': int(st.session_state.df_traditional.Impressions.quantile(0.15)),
-            #         '10th percentile': int(st.session_state.df_traditional.Impressions.quantile(0.1)),
-            #         '5th percentile': int(st.session_state.df_traditional.Impressions.quantile(0.05))
-            #     }
-            #     with st.form('Fill Blanks'):
-            #         st.subheader("Fill Blank Impressions")
-            #         fill_blank_impressions_with = st.radio('Pick your statistical fill value: ', filldict.keys(),
-            #                                                index=4)
-            #         submitted = st.form_submit_button("Fill Blanks")
-            #         if submitted:
-            #             st.session_state.df_traditional[['Impressions']] = st.session_state.df_traditional[['Impressions']].fillna(
-            #                 filldict[fill_blank_impressions_with])
-            #             st.session_state.df_traditional['Impressions'] = st.session_state.df_traditional['Impressions'].astype(int)
-            #             st.session_state.filled = True
-            #             st.experimental_rerun()
-
+            with st.expander('Dataframe'):
+                st.dataframe(st.session_state.df_traditional)
 
 
 elif page == "5: Authors - Missing":
