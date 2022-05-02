@@ -558,7 +558,7 @@ elif page == "4: Impressions - Fill Blanks":
 
         ################
 
-        with st.expander('Fill by type (Large data sets only)'):
+        with st.expander('Fill by type (Recommended for large data sets only)'):
         # traditional = st.session_state.df_traditional
         # blank_impressions = st.session_state.df_traditional['Impressions'].isna().sum()
         #
