@@ -84,14 +84,13 @@ st.sidebar.markdown("""
     [Quickstart Guide](https://github.com/JeremyParkin/mig-data-cleaner/blob/main/README.md) \n
     [GitHub Project](https://github.com/JeremyParkin/mig-data-cleaner) 
     """)
-st.sidebar.caption("v.1.5.2.5")
+st.sidebar.caption("v.1.5.3")
 
 if page == "1: Getting Started":
     st.title('Getting Started')
     import altair as alt
     import io
 
-    # data = st.session_state.df_uncleaned
     # TODO: blank author column creates an error with top X function
 
 
@@ -277,49 +276,11 @@ elif page == "2: Standard Cleaning":
             if submitted:
                 with st.spinner("Running standard cleaning."):
 
-                    data = st.session_state.df_raw
+                    # data = st.session_state.df_raw
 
-                    if "Published Date" in data:
-                        data['Date'] = pd.to_datetime(data['Published Date'] + ' ' + data['Published Time'])
-                        data.drop(["Published Date", "Published Time"], axis=1, inplace=True, errors='ignore')
-
-                        first_column = data.pop('Date')
-                        data.insert(0, 'Date', first_column)
-
-                    data = data.astype({"Media Type": 'category', "Sentiment": 'category', "Continent": 'category',
-                                        "Country": 'category',
-                                        'Province/State': 'category', "City": 'category', "Language": 'category',
-                                        'Mentions': 'category'})
-
-                    data = data.rename(columns={
-                        'Media Type': 'Type',
-                        'Coverage Snippet': 'Snippet',
-                        'Province/State': 'Prov/State',
-                        'Audience Reach': 'Impressions'})
-
-
-                    data.Type.replace({"ONLINE_NEWS": "ONLINE NEWS", "PRESS_RELEASE": "PRESS RELEASE"}, inplace=True)
-                    data.loc[data['URL'].str.contains("www.facebook.com", na=False), 'Type'] = "FACEBOOK"
-                    data.loc[data['URL'].str.contains("/twitter.com", na=False), 'Type'] = "TWITTER"
-                    data.loc[data['URL'].str.contains("www.instagram.com", na=False), 'Type'] = "INSTAGRAM"
-                    data.loc[data['URL'].str.contains("reddit.com", na=False), 'Type'] = "REDDIT"
-                    data.loc[data['URL'].str.contains("youtube.com", na=False), 'Type'] = "YOUTUBE"
-
-                    if merge_online:
-                        data.Type.replace({
-                            "ONLINE NEWS": "ONLINE",
-                            "PRESS RELEASE": "ONLINE",
-                            "BLOGS": "ONLINE"}, inplace=True)
-
-
-                    if "Original URL" in data:
-                        data.loc[data["Original URL"].notnull(), "URL"] = data["Original URL"]
-
-
-                    data.drop(["Timezone",
+                    st.session_state.df_raw.drop(["Timezone",
                                "Word Count",
                                "Duration",
-                               "Original URL",
                                "Image URLs",
                                "Folders",
                                "Notes",
@@ -327,51 +288,109 @@ elif page == "2: Standard Cleaning":
                                "isAudienceFromPartnerUniqueVisitor"],
                               axis=1, inplace=True, errors='ignore')
 
+                    st.session_state.df_raw = st.session_state.df_raw.astype(
+                        {"Media Type": 'category', "Sentiment": 'category', "Continent": 'category',
+                         "Country": 'category',
+                         'Province/State': 'category', "City": 'category', "Language": 'category',
+                         'Mentions': 'category'})
+
+
+                    if "Published Date" in st.session_state.df_raw:
+                        st.session_state.df_raw['Date'] = pd.to_datetime(st.session_state.df_raw['Published Date'] + ' ' + st.session_state.df_raw['Published Time'])
+                        st.session_state.df_raw.drop(["Published Date", "Published Time"], axis=1, inplace=True, errors='ignore')
+
+                        first_column = st.session_state.df_raw.pop('Date')
+                        st.session_state.df_raw.insert(0, 'Date', first_column)
+
+
+
+                    st.session_state.df_raw = st.session_state.df_raw.rename(columns={
+                        'Media Type': 'Type',
+                        'Coverage Snippet': 'Snippet',
+                        'Province/State': 'Prov/State',
+                        'Audience Reach': 'Impressions'})
+
+
+                    st.session_state.df_raw.Type.replace({"ONLINE_NEWS": "ONLINE NEWS", "PRESS_RELEASE": "PRESS RELEASE"}, inplace=True)
+                    st.session_state.df_raw.loc[st.session_state.df_raw['URL'].str.contains("www.facebook.com", na=False), 'Type'] = "FACEBOOK"
+                    st.session_state.df_raw.loc[st.session_state.df_raw['URL'].str.contains("/twitter.com", na=False), 'Type'] = "TWITTER"
+                    st.session_state.df_raw.loc[st.session_state.df_raw['URL'].str.contains("www.instagram.com", na=False), 'Type'] = "INSTAGRAM"
+                    st.session_state.df_raw.loc[st.session_state.df_raw['URL'].str.contains("reddit.com", na=False), 'Type'] = "REDDIT"
+                    st.session_state.df_raw.loc[st.session_state.df_raw['URL'].str.contains("youtube.com", na=False), 'Type'] = "YOUTUBE"
+
+                    if merge_online:
+                        st.session_state.df_raw.Type.replace({
+                            "ONLINE NEWS": "ONLINE",
+                            "PRESS RELEASE": "ONLINE",
+                            "BLOGS": "ONLINE"}, inplace=True)
+
+
+                    if "Original URL" in st.session_state.df_raw:
+                        st.session_state.df_raw.loc[st.session_state.df_raw["Original URL"].notnull(), "URL"] = st.session_state.df_raw["Original URL"]
+
+
+                    st.session_state.df_raw.drop([#"Timezone",
+                               # "Word Count",
+                               # "Duration",
+                               "Original URL",
+                               # "Image URLs",
+                               # "Folders",
+                               # "Notes",
+                               # "County",
+                               # "isAudienceFromPartnerUniqueVisitor"
+                               ],
+                              axis=1, inplace=True, errors='ignore')
+
 
                     # Move columns
-                    temp = data.pop('Impressions')
-                    data.insert(4, 'Impressions', temp)
-                    temp = data.pop('Mentions')
-                    data.insert(4, 'Mentions', temp)
+                    temp = st.session_state.df_raw.pop('Impressions')
+                    st.session_state.df_raw.insert(4, 'Impressions', temp)
+                    temp = st.session_state.df_raw.pop('Mentions')
+                    st.session_state.df_raw.insert(4, 'Mentions', temp)
 
 
                     # Strip extra white space
-                    data['Headline'] = data['Headline'].astype(str)
-                    data['Headline'].str.strip()
-                    data['Outlet'].str.strip()
-                    data['Author'].str.strip()
-                    data['Headline'] = data['Headline'].str.replace('   ', ' ')
-                    data['Outlet'] = data['Outlet'].str.replace('   ', ' ')
-                    data['Author'] = data['Author'].str.replace('   ', ' ')
-                    data['Headline'] = data['Headline'].str.replace('  ', ' ')
-                    data['Outlet'] = data['Outlet'].str.replace('  ', ' ')
-                    data['Author'] = data['Author'].str.replace('  ', ' ')
+                    st.session_state.df_raw['Headline'] = st.session_state.df_raw['Headline'].astype(str)
+                    # data['Headline'].str.strip()
+                    strip_columns = ['Headline', 'Outlet', 'Author']
+                    for column in strip_columns:
+                        st.session_state.df_raw[column].str.strip()
+                        st.session_state.df_raw[column] = st.session_state.df_raw[column].str.replace('   ', ' ')
+                        st.session_state.df_raw[column] = st.session_state.df_raw[column].str.replace('  ', ' ')
+                    # data['Outlet'].str.strip()
+                    # data['Author'].str.strip()
+                    # data['Headline'] = data['Headline'].str.replace('   ', ' ')
+                    # data['Outlet'] = data['Outlet'].str.replace('   ', ' ')
+                    # data['Author'] = data['Author'].str.replace('   ', ' ')
+                    # data['Headline'] = data['Headline'].str.replace('  ', ' ')
+                    # data['Outlet'] = data['Outlet'].str.replace('  ', ' ')
+                    # data['Author'] = data['Author'].str.replace('  ', ' ')
 
 
                     # Remove (Online)
-                    data['Outlet'] = data['Outlet'].str.replace(' \(Online\)', '')
+                    st.session_state.df_raw['Outlet'] = st.session_state.df_raw['Outlet'].str.replace(' \(Online\)', '')
 
 
                     # SOCIALS To sep df
                     soc_array = ['FACEBOOK', 'TWITTER', 'INSTAGRAM', 'REDDIT', 'YOUTUBE']
-                    st.session_state.df_social = data.loc[data['Type'].isin(soc_array)]
-                    data = data[~data['Type'].isin(soc_array)]
+                    st.session_state.df_social = st.session_state.df_raw.loc[st.session_state.df_raw['Type'].isin(soc_array)]
+                    st.session_state.df_raw = st.session_state.df_raw[~st.session_state.df_raw['Type'].isin(soc_array)]
 
 
                     # Fill known impressions
                     if fill_known_imp:
-                        imp_fix_table = fixable_impressions_list(data)
+                        imp_fix_table = fixable_impressions_list(st.session_state.df_raw)
                         for outlet in imp_fix_table.Outlet:
-                            if len(outlet_imp(data, outlet)) == 1:
-                                fix_imp(data, outlet, int(outlet_imp(data, outlet)['index']))
+                            if len(outlet_imp(st.session_state.df_raw, outlet)) == 1:
+                                fix_imp(st.session_state.df_raw, outlet, int(outlet_imp(st.session_state.df_raw, outlet)['index']))
 
                     # AP Cap
                     broadcast_array = ['RADIO', 'TV']
-                    broadcast = data.loc[data['Type'].isin(broadcast_array)]
-                    data = data[~data['Type'].isin(broadcast_array)]
+                    broadcast = st.session_state.df_raw.loc[st.session_state.df_raw['Type'].isin(broadcast_array)]
+                    st.session_state.df_raw = st.session_state.df_raw[~st.session_state.df_raw['Type'].isin(broadcast_array)]
 
-                    data[['Headline']] = data[['Headline']].fillna('')
-                    data['Headline'] = data['Headline'].map(lambda Headline: titlecase(Headline))
+                    st.session_state.df_raw[['Headline']] = st.session_state.df_raw[['Headline']].fillna('')
+                    st.session_state.df_raw['Headline'] = st.session_state.df_raw['Headline'].map(lambda Headline: titlecase(Headline))
 
 
                     # Yahoo standardizer
@@ -383,54 +402,54 @@ elif page == "2: Standard Cleaning":
 
 
                     # Set aside blank URLs
-                    blank_urls = data[data.URL.isna()]
-                    data = data[~data.URL.isna()]
+                    blank_urls = st.session_state.df_raw[st.session_state.df_raw.URL.isna()]
+                    st.session_state.df_raw = st.session_state.df_raw[~st.session_state.df_raw.URL.isna()]
 
                     # Add temporary dupe URL helper column
-                    data['URL_Helper'] = data['URL'].str.lower()
-                    data['URL_Helper'] = data['URL_Helper'].str.replace('http:', 'https:')
+                    st.session_state.df_raw['URL_Helper'] = st.session_state.df_raw['URL'].str.lower()
+                    st.session_state.df_raw['URL_Helper'] = st.session_state.df_raw['URL_Helper'].str.replace('http:', 'https:')
 
                     # Sort duplicate URLS
-                    data = data.sort_values(["URL_Helper", "Author", "Impressions", "AVE"], axis=0,
+                    st.session_state.df_raw = st.session_state.df_raw.sort_values(["URL_Helper", "Author", "Impressions", "AVE"], axis=0,
                                             ascending=[True, True, False, False])
                     # Save duplicate URLS
-                    dupe_urls = data[data['URL_Helper'].duplicated(keep='first') == True]
+                    dupe_urls = st.session_state.df_raw[st.session_state.df_raw['URL_Helper'].duplicated(keep='first') == True]
 
                     # Remove duplicate URLS
-                    data = data[~data['URL_Helper'].duplicated(keep='first') == True]
+                    st.session_state.df_raw = st.session_state.df_raw[~st.session_state.df_raw['URL_Helper'].duplicated(keep='first') == True]
 
                     # Drop URL Helper column from both dfs
-                    data.drop(["URL_Helper"], axis=1, inplace=True, errors='ignore')
+                    st.session_state.df_raw.drop(["URL_Helper"], axis=1, inplace=True, errors='ignore')
                     dupe_urls.drop(["URL_Helper"], axis=1, inplace=True, errors='ignore')
 
-                    frames = [data, blank_urls]
-                    data = pd.concat(frames)
+                    frames = [st.session_state.df_raw, blank_urls]
+                    st.session_state.df_raw = pd.concat(frames)
 
                     ### Dupe column cleaning ###
 
                     # Split off records with blank headline/outlet/type
-                    blank_set = data[data.Headline.isna() | data.Outlet.isna() | data.Type.isna()]
-                    data = data[~data.Headline.isna() | data.Outlet.isna() | data.Type.isna()]
+                    blank_set = st.session_state.df_raw[st.session_state.df_raw.Headline.isna() | st.session_state.df_raw.Outlet.isna() | st.session_state.df_raw.Type.isna()]
+                    st.session_state.df_raw = st.session_state.df_raw[~st.session_state.df_raw.Headline.isna() | st.session_state.df_raw.Outlet.isna() | st.session_state.df_raw.Type.isna()]
 
                     # Add helper column
-                    data["dupe_helper"] = data['Type'].astype('string') + data['Outlet'].astype('string') + data[
+                    st.session_state.df_raw["dupe_helper"] = st.session_state.df_raw['Type'].astype('string') + st.session_state.df_raw['Outlet'].astype('string') + st.session_state.df_raw[
                         'Headline']
-                    data = data.sort_values(["dupe_helper", "Author", "Impressions", "AVE"], axis=0,
+                    st.session_state.df_raw = st.session_state.df_raw.sort_values(["dupe_helper", "Author", "Impressions", "AVE"], axis=0,
                                             ascending=[True, True, False, False])
-                    dupe_cols = data[data['dupe_helper'].duplicated(keep='first') == True]
-                    data = data[~data['dupe_helper'].duplicated(keep='first') == True]
+                    dupe_cols = st.session_state.df_raw[st.session_state.df_raw['dupe_helper'].duplicated(keep='first') == True]
+                    st.session_state.df_raw = st.session_state.df_raw[~st.session_state.df_raw['dupe_helper'].duplicated(keep='first') == True]
 
                     # Drop helper column and rejoin broadcast
-                    data.drop(["dupe_helper"], axis=1, inplace=True, errors='ignore')
+                    st.session_state.df_raw.drop(["dupe_helper"], axis=1, inplace=True, errors='ignore')
                     dupe_cols.drop(["dupe_helper"], axis=1, inplace=True, errors='ignore')
-                    frames = [data, broadcast, blank_set]
-                    traditional = pd.concat(frames)
+                    frames = [st.session_state.df_raw, broadcast, blank_set]
+                    st.session_state.df_traditional = pd.concat(frames)
                     st.session_state.df_dupes = pd.concat([dupe_urls, dupe_cols])
 
 
                     original_trad_auths = top_x_by_mentions(traditional, "Author")
                     st.session_state.original_trad_auths = original_trad_auths
-                    st.session_state.df_traditional = traditional
+                    # st.session_state.df_traditional = traditional
                     st.session_state.standard_step = True
                     st.experimental_rerun()
 
@@ -558,58 +577,41 @@ elif page == "4: Impressions - Fill Blanks":
 
         ################
 
-        with st.expander('Fill by type (ONLY recommended for large data sets)'):
-        # traditional = st.session_state.df_traditional
-        # blank_impressions = st.session_state.df_traditional['Impressions'].isna().sum()
-        #
-        # if blank_impressions == 0:
-        #     st.info('No missing impressions numbers in data')
-        #
-        # else:
-            # media_type_list = st.session_state.df_traditional.Type.unique().tolist()
+            with st.expander('Fill by type (ONLY recommended for large data sets)'):
 
-            # for media_type in media_type_list:
-            #     st.write(f"Null {media_type}: {st.session_state.df_traditional.loc[st.session_state.df_traditional['Type'] == media_type].Impressions.isna().sum()}")
+                percentile_selected = st.select_slider('Percentile fill', range(0,21), 5)
 
-            percentile_selected = st.select_slider('Percentile fill', range(0,21), 5)
+                fill_by_type_dict = st.session_state.df_traditional.groupby(['Type'])['Impressions'].quantile(percentile_selected/100).to_dict()
 
-            fill_by_type_dict = st.session_state.df_traditional.groupby(['Type'])['Impressions'].quantile(percentile_selected/100).to_dict()
+                for k, v in fill_by_type_dict.items():
+                    fill_by_type_dict[k] = int(v)
 
-            for k, v in fill_by_type_dict.items():
-                fill_by_type_dict[k] = int(v)
+                fill_by_type_table = pd.DataFrame.from_dict(fill_by_type_dict, orient='index', columns=[f'Fill Value at {percentile_selected}%'])
 
-            fill_by_type_table = pd.DataFrame.from_dict(fill_by_type_dict, orient='index', columns=[f'Fill Value at {percentile_selected}%'])
+                media_type_list = fill_by_type_table.index.tolist()
 
-            media_type_list = fill_by_type_table.index.tolist()
+                missing = [st.session_state.df_traditional.loc[st.session_state.df_traditional['Type'] == item].Impressions.isna().sum() for item in media_type_list]
+                known = [st.session_state.df_traditional['Type'].value_counts()[item] for item in media_type_list]
+                fill_by_type_table.insert(0, 'Missing', missing)
+                fill_by_type_table.insert(1, 'Known', known)
+                fill_by_type_table = fill_by_type_table[fill_by_type_table["Missing"] > 0]
 
-            missing = [st.session_state.df_traditional.loc[st.session_state.df_traditional['Type'] == item].Impressions.isna().sum() for item in media_type_list]
-            known = [st.session_state.df_traditional['Type'].value_counts()[item] for item in media_type_list]
-            fill_by_type_table.insert(0, 'Missing', missing)
-            fill_by_type_table.insert(1, 'Known', known)
-            fill_by_type_table = fill_by_type_table[fill_by_type_table["Missing"] > 0]
-
-            st.subheader('Media types with missing impressions values')
-            fill_format_dict = {'Known': '{:,d}', f'Fill Value at {percentile_selected}%': '{:,d}'}
-            st.table(fill_by_type_table.style.format(fill_format_dict))
-
-            # st.write(fill_by_type_dict) # USE VALUES FROM THIS DICT TO FILL NA BY TYPE
+                st.subheader('Media types with missing impressions values')
+                fill_format_dict = {'Known': '{:,d}', f'Fill Value at {percentile_selected}%': '{:,d}'}
+                st.table(fill_by_type_table.style.format(fill_format_dict))
 
 
-            with st.form('Fill Blanks by Type'):
-                st.subheader("Fill Blank Impressions")
-                submitted = st.form_submit_button("Fill Blanks")
-                if submitted:
+                with st.form('Fill Blanks by Type'):
+                    st.subheader("Fill Blank Impressions")
+                    submitted = st.form_submit_button("Fill Blanks")
+                    if submitted:
 
-                    # data.loc[(data['Type'] == 'ONLINE NEWS') & data['Impressions'].isna(), 'Impressions'] = 500
-                    for k, v in fill_by_type_dict.items():
-                        st.session_state.df_traditional.loc[(st.session_state.df_traditional['Type'] == k) & st.session_state.df_traditional['Impressions'].isna(), 'Impressions'] = v
+                        # data.loc[(data['Type'] == 'ONLINE NEWS') & data['Impressions'].isna(), 'Impressions'] = 500
+                        for k, v in fill_by_type_dict.items():
+                            st.session_state.df_traditional.loc[(st.session_state.df_traditional['Type'] == k) & st.session_state.df_traditional['Impressions'].isna(), 'Impressions'] = v
 
-                    st.session_state.filled = True
-                    # st.session_state.df_traditional = traditional
-                    st.experimental_rerun()
-
-            # with st.expander('Dataframe'):
-            #     st.dataframe(st.session_state.df_traditional)
+                        st.session_state.filled = True
+                        st.experimental_rerun()
 
 
 elif page == "5: Authors - Missing":
@@ -721,7 +723,6 @@ elif page == "5: Authors - Missing":
                 submitted = st.form_submit_button("Update Author")
                 if submitted:
                     fix_author(st.session_state.df_traditional, headline_text, new_author)
-                    # st.session_state.df_traditional = traditional
                     st.experimental_rerun()
         else:
             st.write("You've reached the end of the list!")
@@ -1088,11 +1089,7 @@ elif page == "7: Translation":
         def translation_stats_combo():
             non_english_records = len(traditional[traditional['Language'] != 'English']) + len(
                 st.session_state.df_social[st.session_state.df_social['Language'] != 'English'])
-            minutes = non_english_records // 100
-            if minutes == 0:
-                min_word = 'minute'
-            else:
-                min_word = 'minutes'
+
             st.write(f"There are {non_english_records} non-English records in your data.")
 
 
