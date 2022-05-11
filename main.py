@@ -1440,3 +1440,6 @@ elif page == "9: Download":
                 sheet.info(buf=buffer)
                 s = buffer.getvalue()
                 st.text(s)
+
+                # pandas 1.3.5 to 1.4.2
+                # streamlit~=1.8.1 to 1.9.0
