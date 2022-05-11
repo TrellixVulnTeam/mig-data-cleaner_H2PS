@@ -359,6 +359,11 @@ elif page == "2: Standard Cleaning":
 
 
                     st.session_state.df_raw.Type.replace({"ONLINE_NEWS": "ONLINE NEWS", "PRESS_RELEASE": "PRESS RELEASE"}, inplace=True)
+
+                    type_categories = (['ONLINE NEWS', 'PRINT', 'RADIO', 'TV', 'BLOGS', 'PRESS RELEASE', 'FACEBOOK', 'TWITTER', 'INSTAGRAM', 'REDDIT', 'YOUTUBE'])
+
+                    st.session_state.df_raw.Type = pd.Categorical(
+                        st.session_state.df_raw.Type, categories=type_categories)
                     st.session_state.df_raw.loc[st.session_state.df_raw['URL'].str.contains("www.facebook.com", na=False), 'Type'] = "FACEBOOK"
                     st.session_state.df_raw.loc[st.session_state.df_raw['URL'].str.contains("/twitter.com", na=False), 'Type'] = "TWITTER"
                     st.session_state.df_raw.loc[st.session_state.df_raw['URL'].str.contains("www.instagram.com", na=False), 'Type'] = "INSTAGRAM"
