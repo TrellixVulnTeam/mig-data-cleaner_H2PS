@@ -151,9 +151,15 @@ if page == "1: Getting Started":
         st.dataframe(st.session_state.df_untouched.head(100).style.format(format_dict, na_rep=' '))
         st.markdown('##')
 
-        with st.expander('Data set stats'):
+        with st.expander('Data set stats - Untouched'):
             buffer = io.StringIO()
             st.session_state.df_untouched.info(buf=buffer)
+            s = buffer.getvalue()
+            st.text(s)
+
+        with st.expander('Data set stats - Raw'):
+            buffer = io.StringIO()
+            st.session_state.df_raw.info(buf=buffer)
             s = buffer.getvalue()
             st.text(s)
 
@@ -180,6 +186,42 @@ if page == "1: Getting Started":
                     st.session_state.df_untouched['AVE'] = st.session_state.df_untouched['AVE'].fillna(0)
                     st.session_state.export_name = f"{client} - {period} - clean_data.xlsx"
                     st.session_state.df_raw = st.session_state.df_untouched
+                    st.session_state.df_raw.drop(["Timezone",
+                                                  "Word Count",
+                                                  "Duration",
+                                                  "Image URLs",
+                                                  "Folders",
+                                                  "Notes",
+                                                  "County",
+                                                  "isAudienceFromPartnerUniqueVisitor"],
+                                                 axis=1, inplace=True, errors='ignore')
+
+                    # df = df.astype({"Name": 'category', "Age": 'int64'})
+                    st.session_state.df_raw = st.session_state.df_raw.astype(
+                        {"Media Type": 'category',
+                         "Sentiment": 'category',
+                         "Continent": 'category',
+                         "Country": 'category',
+                         "Province/State": 'category',
+                         "City": 'category',
+                         "Language": 'category',
+                         "Mentions": 'category'})
+
+                    if "Published Date" in st.session_state.df_raw:
+                        st.session_state.df_raw['Date'] = pd.to_datetime(st.session_state.df_raw['Published Date'] + ' ' + st.session_state.df_raw['Published Time'])
+                        st.session_state.df_raw.drop(["Published Date", "Published Time"], axis=1, inplace=True, errors='ignore')
+
+                        first_column = st.session_state.df_raw.pop('Date')
+                        st.session_state.df_raw.insert(0, 'Date', first_column)
+
+
+
+                    st.session_state.df_raw = st.session_state.df_raw.rename(columns={
+                        'Media Type': 'Type',
+                        'Coverage Snippet': 'Snippet',
+                        'Province/State': 'Prov/State',
+                        'Audience Reach': 'Impressions'})
+
                     st.session_state.upload_step = True
                     st.experimental_rerun()
 
@@ -233,16 +275,16 @@ elif page == "2: Standard Cleaning":
                     st.write(st.session_state.df_dupes['Type'].value_counts())
                 st.dataframe(st.session_state.df_dupes.style.format(format_dict, na_rep=' '))
     else:
-        def yahoo_cleanup(url_string):
-            data.loc[data['URL'].str.contains(url_string, na=False), "Outlet"] = "Yahoo! News"
-            data.loc[data['URL'].str.contains(url_string, na=False), "Impressions"] = 80828000
-            data.loc[data['URL'].str.contains(url_string, na=False), "Country"] = (np.nan)
-            data.loc[data['URL'].str.contains(url_string, na=False), "Continent"] = (np.nan)
-            data.loc[data['URL'].str.contains(url_string, na=False), "City"] = (np.nan)
-            data.loc[data['URL'].str.contains(url_string, na=False), "Prov/State"] = (np.nan)
-            data.loc[data['URL'].str.contains(url_string, na=False), "sub"] = data['URL'].str.rsplit('/', 1).str[-1]
-            data.loc[data['URL'].str.contains(url_string, na=False), "URL"] = 'https://news.yahoo.com/' + data["sub"]
-            data.drop(["sub"], axis=1, inplace=True, errors='ignore')
+        def yahoo_cleanup(df, url_string):
+            df.loc[df['URL'].str.contains(url_string, na=False), "Outlet"] = "Yahoo! News"
+            df.loc[df['URL'].str.contains(url_string, na=False), "Impressions"] = 80828000
+            df.loc[df['URL'].str.contains(url_string, na=False), "Country"] = (np.nan)
+            df.loc[df['URL'].str.contains(url_string, na=False), "Continent"] = (np.nan)
+            df.loc[df['URL'].str.contains(url_string, na=False), "City"] = (np.nan)
+            df.loc[df['URL'].str.contains(url_string, na=False), "Prov/State"] = (np.nan)
+            df.loc[df['URL'].str.contains(url_string, na=False), "sub"] = df['URL'].str.rsplit('/', 1).str[-1]
+            df.loc[df['URL'].str.contains(url_string, na=False), "URL"] = 'https://news.yahoo.com/' + df["sub"]
+            df.drop(["sub"], axis=1, inplace=True, errors='ignore')
             # TODO: Option for Moreover URL Yahoos
 
 
@@ -278,37 +320,42 @@ elif page == "2: Standard Cleaning":
 
                     # data = st.session_state.df_raw
 
-                    st.session_state.df_raw.drop(["Timezone",
-                               "Word Count",
-                               "Duration",
-                               "Image URLs",
-                               "Folders",
-                               "Notes",
-                               "County",
-                               "isAudienceFromPartnerUniqueVisitor"],
-                              axis=1, inplace=True, errors='ignore')
-
-                    st.session_state.df_raw = st.session_state.df_raw.astype(
-                        {"Media Type": 'category', "Sentiment": 'category', "Continent": 'category',
-                         "Country": 'category',
-                         'Province/State': 'category', "City": 'category', "Language": 'category',
-                         'Mentions': 'category'})
-
-
-                    if "Published Date" in st.session_state.df_raw:
-                        st.session_state.df_raw['Date'] = pd.to_datetime(st.session_state.df_raw['Published Date'] + ' ' + st.session_state.df_raw['Published Time'])
-                        st.session_state.df_raw.drop(["Published Date", "Published Time"], axis=1, inplace=True, errors='ignore')
-
-                        first_column = st.session_state.df_raw.pop('Date')
-                        st.session_state.df_raw.insert(0, 'Date', first_column)
+                    # st.session_state.df_raw.drop(["Timezone",
+                    #            "Word Count",
+                    #            "Duration",
+                    #            "Image URLs",
+                    #            "Folders",
+                    #            "Notes",
+                    #            "County",
+                    #            "isAudienceFromPartnerUniqueVisitor"],
+                    #           axis=1, inplace=True, errors='ignore')
+                    #
+                    # # df = df.astype({"Name": 'category', "Age": 'int64'})
+                    # st.session_state.df_raw = st.session_state.df_raw.astype(
+                    #     {"Media Type": 'category',
+                    #      "Sentiment": 'category',
+                    #      "Continent": 'category',
+                    #      "Country": 'category',
+                    #      "Province/State": 'category',
+                    #      "City": 'category',
+                    #      "Language": 'category',
+                    #      "Mentions": 'category'})
 
 
-
-                    st.session_state.df_raw = st.session_state.df_raw.rename(columns={
-                        'Media Type': 'Type',
-                        'Coverage Snippet': 'Snippet',
-                        'Province/State': 'Prov/State',
-                        'Audience Reach': 'Impressions'})
+                    # if "Published Date" in st.session_state.df_raw:
+                    #     st.session_state.df_raw['Date'] = pd.to_datetime(st.session_state.df_raw['Published Date'] + ' ' + st.session_state.df_raw['Published Time'])
+                    #     st.session_state.df_raw.drop(["Published Date", "Published Time"], axis=1, inplace=True, errors='ignore')
+                    #
+                    #     first_column = st.session_state.df_raw.pop('Date')
+                    #     st.session_state.df_raw.insert(0, 'Date', first_column)
+                    #
+                    #
+                    #
+                    # st.session_state.df_raw = st.session_state.df_raw.rename(columns={
+                    #     'Media Type': 'Type',
+                    #     'Coverage Snippet': 'Snippet',
+                    #     'Province/State': 'Prov/State',
+                    #     'Audience Reach': 'Impressions'})
 
 
                     st.session_state.df_raw.Type.replace({"ONLINE_NEWS": "ONLINE NEWS", "PRESS_RELEASE": "PRESS RELEASE"}, inplace=True)
@@ -394,11 +441,11 @@ elif page == "2: Standard Cleaning":
 
 
                     # Yahoo standardizer
-                    yahoo_cleanup('sports.yahoo.com')
-                    yahoo_cleanup('www.yahoo.com')
-                    yahoo_cleanup('news.yahoo.com')
-                    yahoo_cleanup('style.yahoo.com')
-                    yahoo_cleanup('finance.yahoo.com')
+                    yahoo_cleanup(st.session_state.df_raw, 'sports.yahoo.com')
+                    yahoo_cleanup(st.session_state.df_raw, 'www.yahoo.com')
+                    yahoo_cleanup(st.session_state.df_raw, 'news.yahoo.com')
+                    yahoo_cleanup(st.session_state.df_raw, 'style.yahoo.com')
+                    yahoo_cleanup(st.session_state.df_raw, 'finance.yahoo.com')
 
 
                     # Set aside blank URLs
@@ -446,8 +493,10 @@ elif page == "2: Standard Cleaning":
                     st.session_state.df_traditional = pd.concat(frames)
                     st.session_state.df_dupes = pd.concat([dupe_urls, dupe_cols])
 
+                    del st.session_state.df_raw
 
-                    original_trad_auths = top_x_by_mentions(traditional, "Author")
+
+                    original_trad_auths = top_x_by_mentions(st.session_state.df_traditional, "Author")
                     st.session_state.original_trad_auths = original_trad_auths
                     # st.session_state.df_traditional = traditional
                     st.session_state.standard_step = True
@@ -521,13 +570,13 @@ elif page == "4: Impressions - Fill Blanks":
 
         else:
 
-            mean = "{:,}".format(int(st.session_state.df_traditional.Impressions.mean()))
-            median = "{:,}".format(int(st.session_state.df_traditional.Impressions.median()))
-            tercile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.33)))
+            # mean = "{:,}".format(int(st.session_state.df_traditional.Impressions.mean()))
+            # median = "{:,}".format(int(st.session_state.df_traditional.Impressions.median()))
+            # tercile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.33)))
             quartile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.25)))
             twentieth_percentile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.2)))
-            eighteenth_percentile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.18)))
-            seventeenth_percentile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.17)))
+            # eighteenth_percentile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.18)))
+            # seventeenth_percentile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.17)))
             fifteenth_percentile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.15)))
             decile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.1)))
             fifth_percentile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.05)))
@@ -1278,15 +1327,14 @@ elif page == "9: Download":
         traditional = st.session_state.df_traditional
         social = st.session_state.df_social
         # dupes = st.session_state.df_dupes
-        uncleaned = st.session_state.df_untouched
+        # uncleaned = st.session_state.df_untouched
         auth_outlet_table = st.session_state.auth_outlet_table
 
 
-        # TODO: Split datetime back to 2 columns  - $$$  Maybe optional  $$$
+        # Split datetime back to 2 columns  - $$$  Maybe optional  $$$
         # df['Date'] = df.Datetime.dt.date
         # df['Time'] = df.Datetime.dt.time
         # df.drop(["Datetime"], axis = 1, inplace=True, errors='ignore')
-        # NEED TO ADJUST COLUMNS?
 
         # Tag exploder
         if "Tags" in st.session_state.df_traditional:
@@ -1345,7 +1393,7 @@ elif page == "9: Download":
                         worksheet5.freeze_panes(1, 0)
 
                         # TODO: make top authors sheet a table
-                        # cleaned_dfs.append((authors, worksheet5))
+                        cleaned_dfs.append((authors, worksheet5))
 
                     if len(st.session_state.df_dupes) > 0:
                         st.session_state.df_dupes.to_excel(writer, sheet_name='DLTD DUPES', header=True, index=False)
@@ -1354,10 +1402,13 @@ elif page == "9: Download":
                         cleaned_dfs.append((st.session_state.df_dupes, worksheet3))
                         cleaned_sheets.append(worksheet3)
 
-                    uncleaned.to_excel(writer, sheet_name='RAW', header=True, index=False)
-                    # TODO: RAW tab - drop mentions; for top row: freeze, align left, no borders
+                    st.session_state.df_untouched.drop(["Mentions"],
+                                                 axis=1, inplace=True, errors='ignore')
+                    st.session_state.df_untouched.to_excel(writer, sheet_name='RAW', header=True, index=False)
+                    # TODO: RAW tab - for top row: freeze, align left, no borders
                     worksheet4 = writer.sheets['RAW']
                     worksheet4.set_tab_color('#c26f4f')
+                    cleaned_dfs.append((st.session_state.df_untouched, worksheet4))
 
                     for clean_df in cleaned_dfs:
                         (max_row, max_col) = clean_df[0].shape
@@ -1382,3 +1433,10 @@ elif page == "9: Download":
 
         if submitted:
             st.download_button('Download', output, file_name=export_name)
+
+            all_sheets = [st.session_state.df_raw, st.session_state.df_untouched, social, traditional, st.session_state.df_dupes, st.session_state.df_social, st.session_state.df_traditional]
+            for sheet in all_sheets:
+                buffer = io.StringIO()
+                sheet.info(buf=buffer)
+                s = buffer.getvalue()
+                st.text(s)
