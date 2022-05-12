@@ -116,7 +116,7 @@ if page == "1: Getting Started":
             st.metric(label="Impressions", value="{:,}".format(st.session_state.df_untouched['Audience Reach'].sum()))
         with col2:
             st.subheader("Media Type")
-            st.write(st.session_state.df_untouched['Media Type'].cat.remove_unused_categories().value_counts())
+            st.write(st.session_state.df_untouched['Media Type'].value_counts())
 
         col3, col4 = st.columns(2)
         with col3:
