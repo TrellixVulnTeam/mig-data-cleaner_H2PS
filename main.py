@@ -84,7 +84,7 @@ st.sidebar.markdown("""
     [Quickstart Guide](https://github.com/JeremyParkin/mig-data-cleaner/blob/main/README.md) \n
     [GitHub Project](https://github.com/JeremyParkin/mig-data-cleaner) 
     """)
-st.sidebar.caption("v.1.5.3")
+st.sidebar.caption("v.1.5.4")
 
 if page == "1: Getting Started":
     st.title('Getting Started')
@@ -554,8 +554,8 @@ elif page == "4: Impressions - Fill Blanks":
 
     elif st.session_state.filled == True:
         st.success("Missing impressions fill complete!")
-        with st.expander('Dataframe'):
-            st.dataframe(st.session_state.df_traditional)
+        # with st.expander('Dataframe'):
+        #     st.dataframe(st.session_state.df_traditional)
 
 
         # TODO: STATISTICAL FILL IMPROVEMENT, eg by type
@@ -631,41 +631,43 @@ elif page == "4: Impressions - Fill Blanks":
 
         ################
 
-            with st.expander('Fill by type (ONLY recommended for large data sets)'):
-
-                percentile_selected = st.select_slider('Percentile fill', range(0,21), 5)
-
-                fill_by_type_dict = st.session_state.df_traditional.groupby(['Type'])['Impressions'].quantile(percentile_selected/100).to_dict()
-
-                for k, v in fill_by_type_dict.items():
-                    fill_by_type_dict[k] = int(v)
-
-                fill_by_type_table = pd.DataFrame.from_dict(fill_by_type_dict, orient='index', columns=[f'Fill Value at {percentile_selected}%'])
-
-                media_type_list = fill_by_type_table.index.tolist()
-
-                missing = [st.session_state.df_traditional.loc[st.session_state.df_traditional['Type'] == item].Impressions.isna().sum() for item in media_type_list]
-                known = [st.session_state.df_traditional['Type'].value_counts()[item] for item in media_type_list]
-                fill_by_type_table.insert(0, 'Missing', missing)
-                fill_by_type_table.insert(1, 'Known', known)
-                fill_by_type_table = fill_by_type_table[fill_by_type_table["Missing"] > 0]
-
-                st.subheader('Media types with missing impressions values')
-                fill_format_dict = {'Known': '{:,d}', f'Fill Value at {percentile_selected}%': '{:,d}'}
-                st.table(fill_by_type_table.style.format(fill_format_dict))
-
-
-                with st.form('Fill Blanks by Type'):
-                    st.subheader("Fill Blank Impressions")
-                    submitted = st.form_submit_button("Fill Blanks")
-                    if submitted:
-
-                        # data.loc[(data['Type'] == 'ONLINE NEWS') & data['Impressions'].isna(), 'Impressions'] = 500
-                        for k, v in fill_by_type_dict.items():
-                            st.session_state.df_traditional.loc[(st.session_state.df_traditional['Type'] == k) & st.session_state.df_traditional['Impressions'].isna(), 'Impressions'] = v
-
-                        st.session_state.filled = True
-                        st.experimental_rerun()
+            # with st.expander('Fill by type (ONLY recommended for large data sets)'):
+            #
+            #     percentile_selected = st.select_slider('Percentile fill', range(0,21), 5)
+            #
+            #     fill_by_type_dict = st.session_state.df_traditional.groupby(['Type'])['Impressions'].quantile(percentile_selected/100).to_dict()
+            #
+            #     for k, v in fill_by_type_dict.items():
+            #         # fill_by_type_dict[k] = int(v)
+            #         fill_by_type_dict[k] = v
+            #
+            #
+            #     fill_by_type_table = pd.DataFrame.from_dict(fill_by_type_dict, orient='index', columns=[f'Fill Value at {percentile_selected} percentile'])
+            #
+            #     media_type_list = fill_by_type_table.index.tolist()
+            #
+            #     missing = [st.session_state.df_traditional.loc[st.session_state.df_traditional['Type'] == item].Impressions.isna().sum() for item in media_type_list]
+            #     known = [st.session_state.df_traditional['Type'].value_counts()[item] for item in media_type_list]
+            #     fill_by_type_table.insert(0, 'Missing', missing)
+            #     fill_by_type_table.insert(1, 'Known', known)
+            #     fill_by_type_table = fill_by_type_table[fill_by_type_table["Missing"] > 0]
+            #
+            #     st.subheader('Media types with missing impressions values')
+            #     fill_format_dict = {'Known': '{:,d}', f'Fill Value at {percentile_selected} percentile': '{:,.0f}'}
+            #     st.table(fill_by_type_table.style.format(fill_format_dict))
+            #     # st.table(fill_by_type_table)
+            #
+            #     with st.form('Fill Blanks by Type'):
+            #         st.subheader("Fill Blank Impressions")
+            #         submitted = st.form_submit_button("Fill Blanks")
+            #         if submitted:
+            #
+            #             # data.loc[(data['Type'] == 'ONLINE NEWS') & data['Impressions'].isna(), 'Impressions'] = 500
+            #             for k, v in fill_by_type_dict.items():
+            #                 st.session_state.df_traditional.loc[(st.session_state.df_traditional['Type'] == k) & st.session_state.df_traditional['Impressions'].isna(), 'Impressions'] = v
+            #
+            #             st.session_state.filled = True
+            #             st.experimental_rerun()
 
 
 elif page == "5: Authors - Missing":
