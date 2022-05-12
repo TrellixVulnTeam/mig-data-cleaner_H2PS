@@ -89,7 +89,7 @@ st.sidebar.caption("v.1.5.4")
 if page == "1: Getting Started":
     st.title('Getting Started')
     import altair as alt
-    import io
+    # import io
 
     # TODO: blank author column creates an error with top X function
 
@@ -151,17 +151,17 @@ if page == "1: Getting Started":
         st.dataframe(st.session_state.df_untouched.head(100).style.format(format_dict, na_rep=' '))
         st.markdown('##')
 
-        with st.expander('Data set stats - Untouched'):
-            buffer = io.StringIO()
-            st.session_state.df_untouched.info(buf=buffer)
-            s = buffer.getvalue()
-            st.text(s)
-
-        with st.expander('Data set stats - Raw'):
-            buffer = io.StringIO()
-            st.session_state.df_raw.info(buf=buffer)
-            s = buffer.getvalue()
-            st.text(s)
+        # with st.expander('Data set stats - Untouched'):
+        #     buffer = io.StringIO()
+        #     st.session_state.df_untouched.info(buf=buffer)
+        #     s = buffer.getvalue()
+        #     st.text(s)
+        #
+        # with st.expander('Data set stats - Raw'):
+        #     buffer = io.StringIO()
+        #     st.session_state.df_raw.info(buf=buffer)
+        #     s = buffer.getvalue()
+        #     st.text(s)
 
     if st.session_state.upload_step == False:
         with st.form('my_form'):
@@ -1441,12 +1441,12 @@ elif page == "9: Download":
         if submitted:
             st.download_button('Download', output, file_name=export_name)
 
-            all_sheets = [st.session_state.df_raw, st.session_state.df_untouched, social, traditional, st.session_state.df_dupes, st.session_state.df_social, st.session_state.df_traditional]
-            for sheet in all_sheets:
-                buffer = io.StringIO()
-                sheet.info(buf=buffer)
-                s = buffer.getvalue()
-                st.text(s)
+            # all_sheets = [st.session_state.df_raw, st.session_state.df_untouched, social, traditional, st.session_state.df_dupes, st.session_state.df_social, st.session_state.df_traditional]
+            # for sheet in all_sheets:
+            #     buffer = io.StringIO()
+            #     sheet.info(buf=buffer)
+            #     s = buffer.getvalue()
+            #     st.text(s)
 
                 # pandas 1.3.5 to 1.4.2
                 # streamlit~=1.8.1 to 1.9.0
