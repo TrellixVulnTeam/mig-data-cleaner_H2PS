@@ -116,7 +116,7 @@ if page == "1: Getting Started":
             st.metric(label="Impressions", value="{:,}".format(st.session_state.df_untouched['Audience Reach'].sum()))
         with col2:
             st.subheader("Media Type")
-            st.write(st.session_state.df_untouched['Media Type'].value_counts())
+            st.write(st.session_state.df_untouched['Media Type'].cat.remove_unused_categories().value_counts())
 
         col3, col4 = st.columns(2)
         with col3:
@@ -246,7 +246,7 @@ elif page == "2: Standard Cleaning":
                     st.metric(label="Impressions", value="{:,}".format(st.session_state.df_traditional['Impressions'].sum()))
                 with col2:
                     st.subheader("Media Type")
-                    st.write(st.session_state.df_traditional['Type'].value_counts())
+                    st.write(st.session_state.df_traditional['Type'].cat.remove_unused_categories().value_counts())
                 st.subheader("Data")
                 st.markdown('(First 50 rows)')
                 st.dataframe(st.session_state.df_traditional.head(50).style.format(format_dict, na_rep=' '))
@@ -259,7 +259,7 @@ elif page == "2: Standard Cleaning":
                     st.metric(label="Impressions", value="{:,}".format(st.session_state.df_social['Impressions'].sum()))
                 with col2:
                     st.subheader("Media Type")
-                    st.write(st.session_state.df_social['Type'].value_counts())
+                    st.write(st.session_state.df_social['Type'].cat.remove_unused_categories().value_counts())
                 st.subheader("Data")
                 st.markdown('(First 50 rows)')
                 st.dataframe(st.session_state.df_social.head(50).style.format(format_dict, na_rep=' '))
@@ -272,7 +272,7 @@ elif page == "2: Standard Cleaning":
                     st.metric(label="Impressions", value="{:,}".format(st.session_state.df_dupes['Impressions'].sum()))
                 with col2:
                     st.subheader("Media Type")
-                    st.write(st.session_state.df_dupes['Type'].value_counts())
+                    st.write(st.session_state.df_dupes['Type'].cat.remove_unused_categories().value_counts())
                 st.dataframe(st.session_state.df_dupes.style.format(format_dict, na_rep=' '))
     else:
         def yahoo_cleanup(df, url_string):
@@ -1237,7 +1237,8 @@ elif page == "8: Review":
                     st.metric(label="Impressions", value="{:,}".format(st.session_state.df_traditional['Impressions'].sum()))
                 with col2:
                     st.subheader("Media Type")
-                    st.write(st.session_state.df_traditional['Type'].value_counts())
+                    st.write(st.session_state.df_traditional['Type'].cat.remove_unused_categories().value_counts())
+
 
                 col3, col4 = st.columns(2)
                 with col3:
@@ -1284,7 +1285,7 @@ elif page == "8: Review":
                     st.metric(label="Impressions", value="{:,}".format(st.session_state.df_social['Impressions'].sum()))
                 with col2:
                     st.subheader("Media Type")
-                    st.write(st.session_state.df_social['Type'].value_counts())
+                    st.write(st.session_state.df_social['Type'].cat.remove_unused_categories().value_counts())
 
                 # st.markdown('##')
                 # st.subheader('Mention Trend')
@@ -1317,7 +1318,7 @@ elif page == "8: Review":
                     st.metric(label="Impressions", value="{:,}".format(st.session_state.df_dupes['Impressions'].sum()))
                 with col2:
                     st.subheader("Media Type")
-                    st.write(st.session_state.df_dupes['Type'].value_counts())
+                    st.write(st.session_state.df_dupes['Type'].cat.remove_unused_categories().value_counts())
 
 
 elif page == "9: Download":
