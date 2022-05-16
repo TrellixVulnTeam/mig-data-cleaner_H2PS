@@ -285,7 +285,16 @@ elif page == "2: Standard Cleaning":
             df.loc[df['URL'].str.contains(url_string, na=False), "sub"] = df['URL'].str.rsplit('/', 1).str[-1]
             df.loc[df['URL'].str.contains(url_string, na=False), "URL"] = 'https://news.yahoo.com/' + df["sub"]
             df.drop(["sub"], axis=1, inplace=True, errors='ignore')
-            # TODO: Option for Moreover URL Yahoos
+
+
+        # TODO: Option for Moreover URL Yahoos
+        def moreover_yahoo_cleanup(df, outlet_name):
+            df.loc[(df['URL'].str.contains('ct.moreover')) & (df['Outlet'] == outlet_name), "Outlet"] = "Yahoo! News"
+            df.loc[(df['URL'].str.contains('ct.moreover')) & (df['Outlet'] == outlet_name), "Impressions"] = 80828000
+            df.loc[(df['URL'].str.contains('ct.moreover')) & (df['Outlet'] == outlet_name), "Country"] = (np.nan)
+            df.loc[(df['URL'].str.contains('ct.moreover')) & (df['Outlet'] == outlet_name), "Continent"] = (np.nan)
+            df.loc[(df['URL'].str.contains('ct.moreover')) & (df['Outlet'] == outlet_name), "City"] = (np.nan)
+            df.loc[(df['URL'].str.contains('ct.moreover')) & (df['Outlet'] == outlet_name), "Prov/State"] = (np.nan)
 
 
         def fixable_impressions_list(df):
@@ -314,6 +323,7 @@ elif page == "2: Standard Cleaning":
             st.subheader("Cleaning options")
             merge_online = st.checkbox("Merge 'blogs' and 'press releases' into 'Online'", value=True)
             fill_known_imp = st.checkbox("Fill missing impressions values where known match exists in data", value=True)
+            drop_dupes = st.checkbox("Drop duplicates", value=True)
             submitted = st.form_submit_button("Go!")
             if submitted:
                 with st.spinner("Running standard cleaning."):
@@ -403,20 +413,11 @@ elif page == "2: Standard Cleaning":
 
                     # Strip extra white space
                     st.session_state.df_raw['Headline'] = st.session_state.df_raw['Headline'].astype(str)
-                    # data['Headline'].str.strip()
                     strip_columns = ['Headline', 'Outlet', 'Author']
                     for column in strip_columns:
                         st.session_state.df_raw[column].str.strip()
                         st.session_state.df_raw[column] = st.session_state.df_raw[column].str.replace('   ', ' ')
                         st.session_state.df_raw[column] = st.session_state.df_raw[column].str.replace('  ', ' ')
-                    # data['Outlet'].str.strip()
-                    # data['Author'].str.strip()
-                    # data['Headline'] = data['Headline'].str.replace('   ', ' ')
-                    # data['Outlet'] = data['Outlet'].str.replace('   ', ' ')
-                    # data['Author'] = data['Author'].str.replace('   ', ' ')
-                    # data['Headline'] = data['Headline'].str.replace('  ', ' ')
-                    # data['Outlet'] = data['Outlet'].str.replace('  ', ' ')
-                    # data['Author'] = data['Author'].str.replace('  ', ' ')
 
 
                     # Remove (Online)
@@ -436,11 +437,13 @@ elif page == "2: Standard Cleaning":
                             if len(outlet_imp(st.session_state.df_raw, outlet)) == 1:
                                 fix_imp(st.session_state.df_raw, outlet, int(outlet_imp(st.session_state.df_raw, outlet)['index']))
 
-                    # AP Cap
+                    # SPLIT OUT BROADCAST
                     broadcast_array = ['RADIO', 'TV']
                     broadcast = st.session_state.df_raw.loc[st.session_state.df_raw['Type'].isin(broadcast_array)]
                     st.session_state.df_raw = st.session_state.df_raw[~st.session_state.df_raw['Type'].isin(broadcast_array)]
 
+
+                    # AP Cap
                     st.session_state.df_raw[['Headline']] = st.session_state.df_raw[['Headline']].fillna('')
                     st.session_state.df_raw['Headline'] = st.session_state.df_raw['Headline'].map(lambda Headline: titlecase(Headline))
 
@@ -452,58 +455,75 @@ elif page == "2: Standard Cleaning":
                     yahoo_cleanup(st.session_state.df_raw, 'style.yahoo.com')
                     yahoo_cleanup(st.session_state.df_raw, 'finance.yahoo.com')
 
+                    moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! US')
+                    moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! en Español')
+                    moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! Money')
+                    # moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! Style')
+                    # moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! News')
+                    # moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! News')
+                    # moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! News')
+                    # moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! News')
+                    # moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! News')
 
-                    # Set aside blank URLs
-                    blank_urls = st.session_state.df_raw[st.session_state.df_raw.URL.isna()]
-                    st.session_state.df_raw = st.session_state.df_raw[~st.session_state.df_raw.URL.isna()]
 
-                    # Add temporary dupe URL helper column
-                    st.session_state.df_raw['URL_Helper'] = st.session_state.df_raw['URL'].str.lower()
-                    st.session_state.df_raw['URL_Helper'] = st.session_state.df_raw['URL_Helper'].str.replace('http:', 'https:')
 
-                    # Sort duplicate URLS
-                    st.session_state.df_raw = st.session_state.df_raw.sort_values(["URL_Helper", "Author", "Impressions", "AVE"], axis=0,
-                                            ascending=[True, True, False, False])
-                    # Save duplicate URLS
-                    dupe_urls = st.session_state.df_raw[st.session_state.df_raw['URL_Helper'].duplicated(keep='first') == True]
+                    # Duplicate removal
+                    if drop_dupes:
 
-                    # Remove duplicate URLS
-                    st.session_state.df_raw = st.session_state.df_raw[~st.session_state.df_raw['URL_Helper'].duplicated(keep='first') == True]
+                        # Set aside blank URLs
+                        blank_urls = st.session_state.df_raw[st.session_state.df_raw.URL.isna()]
+                        st.session_state.df_raw = st.session_state.df_raw[~st.session_state.df_raw.URL.isna()]
 
-                    # Drop URL Helper column from both dfs
-                    st.session_state.df_raw.drop(["URL_Helper"], axis=1, inplace=True, errors='ignore')
-                    dupe_urls.drop(["URL_Helper"], axis=1, inplace=True, errors='ignore')
+                        # Add temporary dupe URL helper column
+                        st.session_state.df_raw['URL_Helper'] = st.session_state.df_raw['URL'].str.lower()
+                        st.session_state.df_raw['URL_Helper'] = st.session_state.df_raw['URL_Helper'].str.replace('http:', 'https:')
 
-                    frames = [st.session_state.df_raw, blank_urls]
-                    st.session_state.df_raw = pd.concat(frames)
+                        # Sort duplicate URLS
+                        st.session_state.df_raw = st.session_state.df_raw.sort_values(["URL_Helper", "Author", "Impressions", "AVE"], axis=0,
+                                                ascending=[True, True, False, False])
+                        # Save duplicate URLS
+                        dupe_urls = st.session_state.df_raw[st.session_state.df_raw['URL_Helper'].duplicated(keep='first') == True]
 
-                    ### Dupe column cleaning ###
+                        # Remove duplicate URLS
+                        st.session_state.df_raw = st.session_state.df_raw[~st.session_state.df_raw['URL_Helper'].duplicated(keep='first') == True]
 
-                    # Split off records with blank headline/outlet/type
-                    blank_set = st.session_state.df_raw[st.session_state.df_raw.Headline.isna() | st.session_state.df_raw.Outlet.isna() | st.session_state.df_raw.Type.isna()]
-                    st.session_state.df_raw = st.session_state.df_raw[~st.session_state.df_raw.Headline.isna() | st.session_state.df_raw.Outlet.isna() | st.session_state.df_raw.Type.isna()]
+                        # Drop URL Helper column from both dfs
+                        st.session_state.df_raw.drop(["URL_Helper"], axis=1, inplace=True, errors='ignore')
+                        dupe_urls.drop(["URL_Helper"], axis=1, inplace=True, errors='ignore')
 
-                    # Add helper column
-                    st.session_state.df_raw["dupe_helper"] = st.session_state.df_raw['Type'].astype('string') + st.session_state.df_raw['Outlet'].astype('string') + st.session_state.df_raw[
-                        'Headline']
-                    st.session_state.df_raw = st.session_state.df_raw.sort_values(["dupe_helper", "Author", "Impressions", "AVE"], axis=0,
-                                            ascending=[True, True, False, False])
-                    dupe_cols = st.session_state.df_raw[st.session_state.df_raw['dupe_helper'].duplicated(keep='first') == True]
-                    st.session_state.df_raw = st.session_state.df_raw[~st.session_state.df_raw['dupe_helper'].duplicated(keep='first') == True]
+                        frames = [st.session_state.df_raw, blank_urls]
+                        st.session_state.df_raw = pd.concat(frames)
 
-                    # Drop helper column and rejoin broadcast
-                    st.session_state.df_raw.drop(["dupe_helper"], axis=1, inplace=True, errors='ignore')
-                    dupe_cols.drop(["dupe_helper"], axis=1, inplace=True, errors='ignore')
-                    frames = [st.session_state.df_raw, broadcast, blank_set]
-                    st.session_state.df_traditional = pd.concat(frames)
-                    st.session_state.df_dupes = pd.concat([dupe_urls, dupe_cols])
+                        ### Dupe column cleaning ###
+
+                        # Split off records with blank headline/outlet/type
+                        blank_set = st.session_state.df_raw[st.session_state.df_raw.Headline.isna() | st.session_state.df_raw.Outlet.isna() | st.session_state.df_raw.Type.isna()]
+                        st.session_state.df_raw = st.session_state.df_raw[~st.session_state.df_raw.Headline.isna() | st.session_state.df_raw.Outlet.isna() | st.session_state.df_raw.Type.isna()]
+
+                        # Add helper column
+                        st.session_state.df_raw["dupe_helper"] = st.session_state.df_raw['Type'].astype('string') + st.session_state.df_raw['Outlet'].astype('string') + st.session_state.df_raw[
+                            'Headline']
+                        st.session_state.df_raw = st.session_state.df_raw.sort_values(["dupe_helper", "Author", "Impressions", "AVE"], axis=0,
+                                                ascending=[True, True, False, False])
+                        dupe_cols = st.session_state.df_raw[st.session_state.df_raw['dupe_helper'].duplicated(keep='first') == True]
+                        st.session_state.df_raw = st.session_state.df_raw[~st.session_state.df_raw['dupe_helper'].duplicated(keep='first') == True]
+
+                        # Drop helper column and rejoin broadcast
+                        st.session_state.df_raw.drop(["dupe_helper"], axis=1, inplace=True, errors='ignore')
+                        dupe_cols.drop(["dupe_helper"], axis=1, inplace=True, errors='ignore')
+                        frames = [st.session_state.df_raw, broadcast, blank_set]
+                        st.session_state.df_traditional = pd.concat(frames)
+                        st.session_state.df_dupes = pd.concat([dupe_urls, dupe_cols])
+
+                    else:
+                        frames = [st.session_state.df_raw, broadcast]
+                        st.session_state.df_traditional = pd.concat(frames)
 
                     del st.session_state.df_raw
 
 
                     original_trad_auths = top_x_by_mentions(st.session_state.df_traditional, "Author")
                     st.session_state.original_trad_auths = original_trad_auths
-                    # st.session_state.df_traditional = traditional
                     st.session_state.standard_step = True
                     st.experimental_rerun()
 
