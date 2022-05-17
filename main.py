@@ -499,8 +499,8 @@ elif page == "2: Standard Cleaning":
                         ### DROP DUPLICATES BY COLUMN MATCHES #############
 
                         # Split off records with blank headline/outlet/type
-                        blank_set = st.session_state.df_raw[st.session_state.df_raw.Headline.isna() | st.session_state.df_raw.Outlet.isna() | st.session_state.df_raw.Type.isna() | st.session_state.df_raw[st.session_state.df_raw.Headline == '']
-                        st.session_state.df_raw = st.session_state.df_raw[~st.session_state.df_raw.Headline.isna() | st.session_state.df_raw.Outlet.isna() | st.session_state.df_raw.Type.isna() | st.session_state.df_raw[st.session_state.df_raw.Headline == '']
+                        blank_set = st.session_state.df_raw[st.session_state.df_raw.Headline.isna() | st.session_state.df_raw.Outlet.isna() | st.session_state.df_raw.Type.isna() | st.session_state.df_raw.Headline == '']
+                        st.session_state.df_raw = st.session_state.df_raw[~st.session_state.df_raw.Headline.isna() | st.session_state.df_raw.Outlet.isna() | st.session_state.df_raw.Type.isna() | st.session_state.df_raw.Headline == '']
 
                         # Add helper column
                         st.session_state.df_raw["dupe_helper"] = st.session_state.df_raw['Type'].astype('string') + st.session_state.df_raw['Outlet'].astype('string') + st.session_state.df_raw[
