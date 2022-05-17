@@ -91,7 +91,7 @@ if page == "1: Getting Started":
     import altair as alt
     # import io
 
-    # TODO: blank author column creates an error with top X function
+    # TODO: Fully blank author column creates an error with top X function
 
 
     if st.session_state.upload_step == True:
@@ -470,6 +470,8 @@ elif page == "2: Standard Cleaning":
                     # Duplicate removal
                     if drop_dupes:
 
+                        ### DROP DUPLICATES BY URL MATCHES #############
+
                         # Set aside blank URLs
                         blank_urls = st.session_state.df_raw[st.session_state.df_raw.URL.isna()]
                         st.session_state.df_raw = st.session_state.df_raw[~st.session_state.df_raw.URL.isna()]
@@ -494,11 +496,11 @@ elif page == "2: Standard Cleaning":
                         frames = [st.session_state.df_raw, blank_urls]
                         st.session_state.df_raw = pd.concat(frames)
 
-                        ### Dupe column cleaning ###
+                        ### DROP DUPLICATES BY COLUMN MATCHES #############
 
                         # Split off records with blank headline/outlet/type
-                        blank_set = st.session_state.df_raw[st.session_state.df_raw.Headline.isna() | st.session_state.df_raw.Outlet.isna() | st.session_state.df_raw.Type.isna()]
-                        st.session_state.df_raw = st.session_state.df_raw[~st.session_state.df_raw.Headline.isna() | st.session_state.df_raw.Outlet.isna() | st.session_state.df_raw.Type.isna()]
+                        blank_set = st.session_state.df_raw[st.session_state.df_raw.Headline.isna() | st.session_state.df_raw.Outlet.isna() | st.session_state.df_raw.Type.isna() | st.session_state.df_raw[st.session_state.df_raw.Headline == '']
+                        st.session_state.df_raw = st.session_state.df_raw[~st.session_state.df_raw.Headline.isna() | st.session_state.df_raw.Outlet.isna() | st.session_state.df_raw.Type.isna() | st.session_state.df_raw[st.session_state.df_raw.Headline == '']
 
                         # Add helper column
                         st.session_state.df_raw["dupe_helper"] = st.session_state.df_raw['Type'].astype('string') + st.session_state.df_raw['Outlet'].astype('string') + st.session_state.df_raw[
@@ -1210,6 +1212,7 @@ elif page == "7: Translation":
                 st.warning("Stay on this page until translation is complete")
 
                 if headline_to_english:
+                    traditional['Original Headline'] = traditional.Headline
                     translate_col(traditional, 'Headline')
 
                     # AP Cap
@@ -1220,6 +1223,8 @@ elif page == "7: Translation":
                     traditional['Headline'] = traditional['Headline'].map(lambda Headline: titlecase(Headline))
                     frames = [traditional, broadcast]
                     traditional = pd.concat(frames)
+
+                    st.session_state.df_social['Original Headline'] = st.session_state.df_social.Headline
 
                     translate_col(st.session_state.df_social, 'Headline')
                     st.session_state.translated_headline = True
@@ -1420,7 +1425,6 @@ elif page == "9: Download":
                         worksheet5.set_column('D:D', 35, None)  # outlet
                         worksheet5.freeze_panes(1, 0)
 
-                        # TODO: make top authors sheet a table
                         cleaned_dfs.append((authors, worksheet5))
 
                     if len(st.session_state.df_dupes) > 0:
