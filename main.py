@@ -16,30 +16,42 @@ st.markdown(hide_menu_style, unsafe_allow_html=True)
 
 
 def top_x_by_mentions(df, column_name):
-    """Returns top N items by mention count"""
-    x_table = pd.pivot_table(df, index=column_name, values=["Mentions"], aggfunc="count")
-    x_table = x_table.sort_values("Mentions", ascending=False)
-    x_table = x_table.rename(columns={"Mentions": "Hits"})
-    return x_table.head(10)
+    """Returns top 10 items by mention count"""
+
+    top10 = df[[column_name, 'Mentions']].groupby(
+        by=[column_name]).sum().sort_values(
+        ['Mentions'], ascending=False)
+    top10 = top10.rename(columns={"Mentions": "Hits"})
+
+    return top10.head(10)
+
+
+def basic_metrics(set_name, df):
+    if len(df) > 0:
+        with st.expander(set_name):
+            col1, col2 = st.columns(2)
+            with col1:
+                st.subheader("Basic Metrics")
+                st.metric(label="Mentions", value="{:,}".format(len(df)))
+                st.metric(label="Impressions",
+                          value="{:,}".format(df['Impressions'].sum()))
+            with col2:
+                st.subheader("Media Type")
+                st.write(df['Type'].cat.remove_unused_categories().value_counts())
+            st.subheader("Data")
+            st.markdown('(First 50 rows)')
+            st.dataframe(df.head(50).style.format(format_dict, na_rep=' '))
 
 
 format_dict = {'AVE': '${0:,.0f}', 'Audience Reach': '{:,d}', 'Impressions': '{:,d}'}
 
 # Initialize Session State Variables
-
-# if 'page' not in st.session_state:
-#     st.session_state.page = '1: Getting Started'
-# if 'top_auths_by' not in st.session_state:
-#     st.session_state.top_auths_by = 'Mentions'
-# if 'export_name' not in st.session_state:
-#     st.session_state.export_name = ''
-
 string_vars = {'page': '1: Getting Started', 'top_auths_by': 'Mentions', 'export_name': ''}
 for key, value in string_vars.items():
   if key not in st.session_state:
       st.session_state[key] = value
 
-df_vars = ['df_traditional', 'df_social', 'df_dupes', 'original_trad_auths', 'auth_outlet_table', 'original_auths', 'df_raw', 'df_untouched', 'author_outlets']
+df_vars = ['df_traditional', 'df_social', 'df_dupes', 'original_trad_auths', 'auth_outlet_table', 'original_auths', 'df_raw', 'df_untouched', 'author_outlets', 'df_check1', 'df_check2', 'broadcast_set', 'blank_set']
 for _ in df_vars:
     if _ not in st.session_state:
         st.session_state[_] = pd.DataFrame()
@@ -84,7 +96,7 @@ st.sidebar.markdown("""
     [Quickstart Guide](https://github.com/JeremyParkin/mig-data-cleaner/blob/main/README.md) \n
     [GitHub Project](https://github.com/JeremyParkin/mig-data-cleaner) 
     """)
-st.sidebar.caption("v.1.5.4")
+st.sidebar.caption("v.1.5.4.1")
 
 if page == "1: Getting Started":
     st.title('Getting Started')
@@ -103,6 +115,11 @@ if page == "1: Getting Started":
 
 
         st.session_state.df_untouched["Mentions"] = 1
+
+        if "Impressions" in st.session_state.df_untouched:
+            st.session_state.df_untouched = st.session_state.df_raw.rename(columns={
+                'Impressions': 'Audience Reach'})
+
 
         st.session_state.df_untouched['Audience Reach'] = st.session_state.df_untouched['Audience Reach'].astype('Int64')
         st.session_state.df_untouched['AVE'] = st.session_state.df_untouched['AVE'].fillna(0)
@@ -180,8 +197,13 @@ if page == "1: Getting Started":
             elif submitted:
                 with st.spinner("Converting file format."):
                     st.session_state.df_untouched = pd.read_csv(uploaded_file)
+                    if "Impressions" in st.session_state.df_untouched:
+                        st.session_state.df_untouched = st.session_state.df_untouched.rename(columns={
+                            'Impressions': 'Audience Reach'})
+
                     st.session_state.df_untouched = st.session_state.df_untouched.dropna(thresh=3)
                     st.session_state.df_untouched["Mentions"] = 1
+
                     st.session_state.df_untouched['Audience Reach'] = st.session_state.df_untouched['Audience Reach'].astype('Int64')
                     st.session_state.df_untouched['AVE'] = st.session_state.df_untouched['AVE'].fillna(0)
                     st.session_state.export_name = f"{client} - {period} - clean_data.xlsx"
@@ -196,7 +218,6 @@ if page == "1: Getting Started":
                                                   "isAudienceFromPartnerUniqueVisitor"],
                                                  axis=1, inplace=True, errors='ignore')
 
-                    # df = df.astype({"Name": 'category', "Age": 'int64'})
                     st.session_state.df_raw = st.session_state.df_raw.astype(
                         {"Media Type": 'category',
                          "Sentiment": 'category',
@@ -205,7 +226,8 @@ if page == "1: Getting Started":
                          "Province/State": 'category',
                          "City": 'category',
                          "Language": 'category',
-                         "Mentions": 'category'})
+                         # "Mentions": 'category'
+                         })
 
                     if "Published Date" in st.session_state.df_raw:
                         st.session_state.df_raw['Date'] = pd.to_datetime(st.session_state.df_raw['Published Date'] + ' ' + st.session_state.df_raw['Published Time'])
@@ -230,6 +252,15 @@ elif page == "2: Standard Cleaning":
     st.title('Standard Cleaning')
     from titlecase import titlecase
 
+
+    # basic_metrics("Check 1", st.session_state.df_check1)
+    # basic_metrics("Check 2", st.session_state.df_check2)
+    # basic_metrics("DF RAW", st.session_state.df_raw)
+    # basic_metrics("Broadcast", st.session_state.broadcast_set)
+    # basic_metrics("Blank set", st.session_state.blank_set)
+
+    # frames = [st.session_state.df_raw, broadcast_set, blank_set]
+
     # TODO: Option to REMOVE NEWSWIRES
 
     if st.session_state.upload_step == False:
@@ -250,6 +281,8 @@ elif page == "2: Standard Cleaning":
                 st.subheader("Data")
                 st.markdown('(First 50 rows)')
                 st.dataframe(st.session_state.df_traditional.head(50).style.format(format_dict, na_rep=' '))
+
+
         if len(st.session_state.df_social) > 0:
             with st.expander("Social"):
                 col1, col2 = st.columns(2)
@@ -288,6 +321,7 @@ elif page == "2: Standard Cleaning":
 
 
         # TODO: Option for Moreover URL Yahoos
+
         def moreover_yahoo_cleanup(df, outlet_name):
             df.loc[(df['URL'].str.contains('ct.moreover')) & (df['Outlet'] == outlet_name), "Outlet"] = "Yahoo! News"
             df.loc[(df['URL'].str.contains('ct.moreover')) & (df['Outlet'] == outlet_name), "Impressions"] = 80828000
@@ -328,46 +362,6 @@ elif page == "2: Standard Cleaning":
             if submitted:
                 with st.spinner("Running standard cleaning."):
 
-                    # data = st.session_state.df_raw
-
-                    # st.session_state.df_raw.drop(["Timezone",
-                    #            "Word Count",
-                    #            "Duration",
-                    #            "Image URLs",
-                    #            "Folders",
-                    #            "Notes",
-                    #            "County",
-                    #            "isAudienceFromPartnerUniqueVisitor"],
-                    #           axis=1, inplace=True, errors='ignore')
-                    #
-                    # # df = df.astype({"Name": 'category', "Age": 'int64'})
-                    # st.session_state.df_raw = st.session_state.df_raw.astype(
-                    #     {"Media Type": 'category',
-                    #      "Sentiment": 'category',
-                    #      "Continent": 'category',
-                    #      "Country": 'category',
-                    #      "Province/State": 'category',
-                    #      "City": 'category',
-                    #      "Language": 'category',
-                    #      "Mentions": 'category'})
-
-
-                    # if "Published Date" in st.session_state.df_raw:
-                    #     st.session_state.df_raw['Date'] = pd.to_datetime(st.session_state.df_raw['Published Date'] + ' ' + st.session_state.df_raw['Published Time'])
-                    #     st.session_state.df_raw.drop(["Published Date", "Published Time"], axis=1, inplace=True, errors='ignore')
-                    #
-                    #     first_column = st.session_state.df_raw.pop('Date')
-                    #     st.session_state.df_raw.insert(0, 'Date', first_column)
-                    #
-                    #
-                    #
-                    # st.session_state.df_raw = st.session_state.df_raw.rename(columns={
-                    #     'Media Type': 'Type',
-                    #     'Coverage Snippet': 'Snippet',
-                    #     'Province/State': 'Prov/State',
-                    #     'Audience Reach': 'Impressions'})
-
-
                     st.session_state.df_raw.Type.replace({"ONLINE_NEWS": "ONLINE NEWS", "PRESS_RELEASE": "PRESS RELEASE"}, inplace=True)
 
                     type_categories = (['ONLINE NEWS', 'PRINT', 'RADIO', 'TV', 'BLOGS', 'PRESS RELEASE', 'FACEBOOK', 'TWITTER', 'INSTAGRAM', 'REDDIT', 'YOUTUBE'])
@@ -391,17 +385,7 @@ elif page == "2: Standard Cleaning":
                         st.session_state.df_raw.loc[st.session_state.df_raw["Original URL"].notnull(), "URL"] = st.session_state.df_raw["Original URL"]
 
 
-                    st.session_state.df_raw.drop([#"Timezone",
-                               # "Word Count",
-                               # "Duration",
-                               "Original URL",
-                               # "Image URLs",
-                               # "Folders",
-                               # "Notes",
-                               # "County",
-                               # "isAudienceFromPartnerUniqueVisitor"
-                               ],
-                              axis=1, inplace=True, errors='ignore')
+                    st.session_state.df_raw.drop(["Original URL"], axis=1, inplace=True, errors='ignore')
 
 
                     # Move columns
@@ -429,6 +413,10 @@ elif page == "2: Standard Cleaning":
                     st.session_state.df_social = st.session_state.df_raw.loc[st.session_state.df_raw['Type'].isin(soc_array)]
                     st.session_state.df_raw = st.session_state.df_raw[~st.session_state.df_raw['Type'].isin(soc_array)]
 
+                    # original_top_authors = (top_x_by_mentions(st.session_state.df_untouched, "Author"))
+                    original_trad_auths = (top_x_by_mentions(st.session_state.df_raw, "Author"))
+                    st.session_state.original_trad_auths = original_trad_auths
+
 
                     # Fill known impressions
                     if fill_known_imp:
@@ -439,7 +427,7 @@ elif page == "2: Standard Cleaning":
 
                     # SPLIT OUT BROADCAST
                     broadcast_array = ['RADIO', 'TV']
-                    broadcast = st.session_state.df_raw.loc[st.session_state.df_raw['Type'].isin(broadcast_array)]
+                    st.session_state.broadcast_set = st.session_state.df_raw.loc[st.session_state.df_raw['Type'].isin(broadcast_array)]
                     st.session_state.df_raw = st.session_state.df_raw[~st.session_state.df_raw['Type'].isin(broadcast_array)]
 
 
@@ -454,16 +442,14 @@ elif page == "2: Standard Cleaning":
                     yahoo_cleanup(st.session_state.df_raw, 'news.yahoo.com')
                     yahoo_cleanup(st.session_state.df_raw, 'style.yahoo.com')
                     yahoo_cleanup(st.session_state.df_raw, 'finance.yahoo.com')
+                    yahoo_cleanup(st.session_state.df_raw, 'money.yahoo.com')
 
                     moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! US')
                     moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! en Español')
                     moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! Money')
                     # moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! Style')
                     # moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! News')
-                    # moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! News')
-                    # moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! News')
-                    # moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! News')
-                    # moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! News')
+
 
 
 
@@ -496,11 +482,27 @@ elif page == "2: Standard Cleaning":
                         frames = [st.session_state.df_raw, blank_urls]
                         st.session_state.df_raw = pd.concat(frames)
 
+
                         ### DROP DUPLICATES BY COLUMN MATCHES #############
 
+                        # ##########
+                        # st.session_state.df_check1 = st.session_state.df_raw
+                        # ##########
+
                         # Split off records with blank headline/outlet/type
-                        blank_set = st.session_state.df_raw[st.session_state.df_raw.Headline.isna() | st.session_state.df_raw.Outlet.isna() | st.session_state.df_raw.Type.isna() | st.session_state.df_raw.Headline == '']
-                        st.session_state.df_raw = st.session_state.df_raw[~st.session_state.df_raw.Headline.isna() | st.session_state.df_raw.Outlet.isna() | st.session_state.df_raw.Type.isna() | st.session_state.df_raw.Headline == '']
+                        blank_set = st.session_state.df_raw[st.session_state.df_raw.Headline.isna() | st.session_state.df_raw.Outlet.isna() | st.session_state.df_raw.Type.isna() | len(st.session_state.df_raw.Headline) == 0]
+                        # st.session_state.df_raw = st.session_state.df_raw[~st.session_state.df_raw.Headline.isna() | ~st.session_state.df_raw.Outlet.isna() | ~st.session_state.df_raw.Type.isna() | ~len(st.session_state.df_raw.Headline) == 0]
+                        st.session_state.df_raw = st.session_state.df_raw[~st.session_state.df_raw.Headline.isna()]
+                        st.session_state.df_raw = st.session_state.df_raw[~st.session_state.df_raw.Outlet.isna()]
+                        st.session_state.df_raw = st.session_state.df_raw[~st.session_state.df_raw.Type.isna()]
+                        # st.session_state.df_raw = st.session_state.df_raw[~(len(st.session_state.df_raw.Headline) < 1)]
+
+
+
+                        # ##########
+                        # st.session_state.df_check2 = st.session_state.df_raw
+                        # ##########
+
 
                         # Add helper column
                         st.session_state.df_raw["dupe_helper"] = st.session_state.df_raw['Type'].astype('string') + st.session_state.df_raw['Outlet'].astype('string') + st.session_state.df_raw[
@@ -510,22 +512,23 @@ elif page == "2: Standard Cleaning":
                         dupe_cols = st.session_state.df_raw[st.session_state.df_raw['dupe_helper'].duplicated(keep='first') == True]
                         st.session_state.df_raw = st.session_state.df_raw[~st.session_state.df_raw['dupe_helper'].duplicated(keep='first') == True]
 
+
                         # Drop helper column and rejoin broadcast
                         st.session_state.df_raw.drop(["dupe_helper"], axis=1, inplace=True, errors='ignore')
                         dupe_cols.drop(["dupe_helper"], axis=1, inplace=True, errors='ignore')
-                        frames = [st.session_state.df_raw, broadcast, blank_set]
+                        frames = [st.session_state.df_raw, st.session_state.broadcast_set, st.session_state.blank_set]
                         st.session_state.df_traditional = pd.concat(frames)
                         st.session_state.df_dupes = pd.concat([dupe_urls, dupe_cols])
 
+
                     else:
-                        frames = [st.session_state.df_raw, broadcast]
+                        frames = [st.session_state.df_raw, st.session_state.broadcast_set]
                         st.session_state.df_traditional = pd.concat(frames)
 
                     del st.session_state.df_raw
 
-
-                    original_trad_auths = top_x_by_mentions(st.session_state.df_traditional, "Author")
-                    st.session_state.original_trad_auths = original_trad_auths
+                    # original_trad_auths = (top_x_by_mentions(st.session_state.df_traditional, "Author"))
+                    # st.session_state.original_trad_auths = original_trad_auths
                     st.session_state.standard_step = True
                     st.experimental_rerun()
 
@@ -694,7 +697,7 @@ elif page == "4: Impressions - Fill Blanks":
 
 elif page == "5: Authors - Missing":
     st.title('Authors - Missing')
-    original_trad_auths = st.session_state.original_trad_auths
+    # original_trad_auths = st.session_state.original_trad_auths
 
     if st.session_state.upload_step == False:
         st.error('Please upload a CSV before trying this step.')
@@ -814,18 +817,19 @@ elif page == "5: Authors - Missing":
                 st.success("✓ Nothing left to update here.")
 
         col1, col2 = st.columns(2)
-
+        # TODO: authors not showing up
         with col1:
             st.subheader("Original Top Authors")
-            st.dataframe(original_trad_auths)
+            st.dataframe(st.session_state.original_trad_auths)
 
         with col2:
             st.subheader("New Top Authors")
-            st.dataframe(top_x_by_mentions(st.session_state.df_traditional, "Author"))
+            st.dataframe((top_x_by_mentions(st.session_state.df_traditional, "Author")))
 
         # st.subheader("Fixable Author Stats")
         # stats = (fixable_headline_stats(traditional, primary="Headline", secondary="Author"))
         # st.text(stats)
+        st.dataframe(st.session_state.df_traditional)
 
 
 elif page == "6: Authors - Outlets":
