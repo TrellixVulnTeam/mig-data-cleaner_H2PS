@@ -806,21 +806,20 @@ elif page == "5: Authors - Missing":
 
 elif page == "6: Authors - Outlets":
     st.title("Author - Outlets")
-    from unidecode import unidecode
-    import requests
-    from requests.structures import CaseInsensitiveDict
-
-    st.session_state.df_traditional.Mentions = st.session_state.df_traditional.Mentions.astype('int')
-
-    auth_outlet_skipped = st.session_state.auth_outlet_skipped
-    auth_outlet_table = st.session_state.auth_outlet_table
-    top_auths_by = st.session_state.top_auths_by
-
     if st.session_state.upload_step == False:
         st.error('Please upload a CSV before trying this step.')
     elif st.session_state.standard_step == False:
         st.error('Please run the Standard Cleaning before trying this step.')
     else:
+        from unidecode import unidecode
+        import requests
+        from requests.structures import CaseInsensitiveDict
+
+        st.session_state.df_traditional.Mentions = st.session_state.df_traditional.Mentions.astype('int')
+        auth_outlet_skipped = st.session_state.auth_outlet_skipped
+        auth_outlet_table = st.session_state.auth_outlet_table
+        top_auths_by = st.session_state.top_auths_by
+
         def fetch_outlet(author_name):
             contact_url = "https://mediadatabase.agilitypr.com/api/v4/contacts/search"
             headers = CaseInsensitiveDict()
