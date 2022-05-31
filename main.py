@@ -51,7 +51,7 @@ for key, value in string_vars.items():
   if key not in st.session_state:
       st.session_state[key] = value
 
-df_vars = ['df_traditional', 'df_social', 'df_dupes', 'original_trad_auths', 'auth_outlet_table', 'original_auths', 'df_raw', 'df_untouched', 'author_outlets', 'df_check1', 'df_check2', 'broadcast_set', 'blank_set']
+df_vars = ['df_traditional', 'df_social', 'df_dupes', 'original_trad_auths', 'auth_outlet_table', 'original_auths', 'df_raw', 'df_untouched', 'author_outlets', 'broadcast_set', 'blank_set']
 for _ in df_vars:
     if _ not in st.session_state:
         st.session_state[_] = pd.DataFrame()
@@ -168,17 +168,6 @@ if page == "1: Getting Started":
         st.dataframe(st.session_state.df_untouched.head(100).style.format(format_dict, na_rep=' '))
         st.markdown('##')
 
-        # with st.expander('Data set stats - Untouched'):
-        #     buffer = io.StringIO()
-        #     st.session_state.df_untouched.info(buf=buffer)
-        #     s = buffer.getvalue()
-        #     st.text(s)
-        #
-        # with st.expander('Data set stats - Raw'):
-        #     buffer = io.StringIO()
-        #     st.session_state.df_raw.info(buf=buffer)
-        #     s = buffer.getvalue()
-        #     st.text(s)
 
     if st.session_state.upload_step == False:
         with st.form('my_form'):
@@ -225,8 +214,7 @@ if page == "1: Getting Started":
                          "Country": 'category',
                          "Province/State": 'category',
                          "City": 'category',
-                         "Language": 'category',
-                         # "Mentions": 'category'
+                         "Language": 'category'
                          })
 
                     if "Published Date" in st.session_state.df_raw:
@@ -252,14 +240,6 @@ elif page == "2: Standard Cleaning":
     st.title('Standard Cleaning')
     from titlecase import titlecase
 
-
-    # basic_metrics("Check 1", st.session_state.df_check1)
-    # basic_metrics("Check 2", st.session_state.df_check2)
-    # basic_metrics("DF RAW", st.session_state.df_raw)
-    # basic_metrics("Broadcast", st.session_state.broadcast_set)
-    # basic_metrics("Blank set", st.session_state.blank_set)
-
-    # frames = [st.session_state.df_raw, broadcast_set, blank_set]
 
     # TODO: Option to REMOVE NEWSWIRES
 
@@ -442,6 +422,7 @@ elif page == "2: Standard Cleaning":
                     yahoo_cleanup(st.session_state.df_raw, 'news.yahoo.com')
                     yahoo_cleanup(st.session_state.df_raw, 'style.yahoo.com')
                     yahoo_cleanup(st.session_state.df_raw, 'finance.yahoo.com')
+                    yahoo_cleanup(st.session_state.df_raw, 'es-us.finanzas.yahoo.com')
                     yahoo_cleanup(st.session_state.df_raw, 'money.yahoo.com')
 
                     moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! US')
@@ -485,9 +466,6 @@ elif page == "2: Standard Cleaning":
 
                         ### DROP DUPLICATES BY COLUMN MATCHES #############
 
-                        # ##########
-                        # st.session_state.df_check1 = st.session_state.df_raw
-                        # ##########
 
                         # Split off records with blank headline/outlet/type
                         blank_set = st.session_state.df_raw[st.session_state.df_raw.Headline.isna() | st.session_state.df_raw.Outlet.isna() | st.session_state.df_raw.Type.isna() | len(st.session_state.df_raw.Headline) == 0]
@@ -496,12 +474,6 @@ elif page == "2: Standard Cleaning":
                         st.session_state.df_raw = st.session_state.df_raw[~st.session_state.df_raw.Outlet.isna()]
                         st.session_state.df_raw = st.session_state.df_raw[~st.session_state.df_raw.Type.isna()]
                         # st.session_state.df_raw = st.session_state.df_raw[~(len(st.session_state.df_raw.Headline) < 1)]
-
-
-
-                        # ##########
-                        # st.session_state.df_check2 = st.session_state.df_raw
-                        # ##########
 
 
                         # Add helper column
@@ -806,7 +778,7 @@ elif page == "5: Authors - Missing":
                     fix_author(st.session_state.df_traditional, headline_text, new_author)
                     st.experimental_rerun()
         else:
-            st.write("You've reached the end of the list!")
+            st.info("You've reached the end of the list!")
             if counter > 0:
                 reset_counter = st.button('Reset Counter')
                 if reset_counter:
@@ -941,34 +913,38 @@ elif page == "6: Authors - Outlets":
                         st.experimental_rerun()
 
             search_results = fetch_outlet(unidecode(author_name))
-            number_of_authors = len(search_results['results'])
+
             db_outlets = []
 
-            if search_results['results'] == []:
-                matched_authors = []
-            elif search_results['results'] == None:
-                matched_authors = []
-            else:
-                response_results = search_results['results']
-                outlet_results = []
+            if 'results' in search_results:
+                number_of_authors = len(search_results['results'])
 
-                for result in response_results:
-                    auth_name = result['firstName'] + " " + result['lastName']
-                    job_title = result['primaryEmployment']['jobTitle']
-                    outlet = result['primaryEmployment']['outletName']
-                    if result['country'] == None:
-                        country = ''
 
-                    else:
-                        country = result['country']['name']
-                    auth_tuple = (auth_name, job_title, outlet, country)
-                    outlet_results.append(auth_tuple)
+                if search_results['results'] == []:
+                    matched_authors = []
+                elif search_results['results'] == None:
+                    matched_authors = []
+                else:
+                    response_results = search_results['results']
+                    outlet_results = []
 
-                matched_authors = pd.DataFrame.from_records(outlet_results,
-                                                            columns=['Name', 'Title', 'Outlet', 'Country'])
-                matched_authors.loc[matched_authors.Outlet == "[Freelancer]", "Outlet"] = "Freelance"
+                    for result in response_results:
+                        auth_name = result['firstName'] + " " + result['lastName']
+                        job_title = result['primaryEmployment']['jobTitle']
+                        outlet = result['primaryEmployment']['outletName']
+                        if result['country'] == None:
+                            country = ''
 
-                db_outlets = matched_authors.Outlet.tolist()
+                        else:
+                            country = result['country']['name']
+                        auth_tuple = (auth_name, job_title, outlet, country)
+                        outlet_results.append(auth_tuple)
+
+                    matched_authors = pd.DataFrame.from_records(outlet_results,
+                                                                columns=['Name', 'Title', 'Outlet', 'Country'])
+                    matched_authors.loc[matched_authors.Outlet == "[Freelancer]", "Outlet"] = "Freelance"
+
+                    db_outlets = matched_authors.Outlet.tolist()
 
             # OUTLETS IN COVERAGE VS DATABASE
             # CSS to inject contained in a string
@@ -1012,12 +988,16 @@ elif page == "6: Authors - Outlets":
 
             with col3:
                 st.subheader("Media Database Results")  #####################################
-                if search_results['results'] == []:
+                if 'results' not in search_results:
+                    st.warning("NO MATCH FOUND")
+                    matched_authors = []
+                elif search_results['results'] == []:
                     st.warning("NO MATCH FOUND")
                     matched_authors = []
                 elif search_results == None:
                     st.warning("NO MATCH FOUND")
                     matched_authors = []
+
                 else:
                     response_results = search_results['results']
                     outlet_results = []
@@ -1108,9 +1088,9 @@ elif page == "6: Authors - Outlets":
                 else:
                     st.metric(label='Assigned', value=0)
         else:
-            st.write("You've reached the end of the list!")
-            st.write(f"Counter: {auth_outlet_skipped}")
-            st.write(f"To Do: {len(auth_outlet_todo)}")
+            st.info("You've reached the end of the list!")
+            st.write(f"Authors skipped: {auth_outlet_skipped}")
+            # st.write(f"To Do: {len(auth_outlet_todo)}")
             if auth_outlet_skipped > 0:
                 reset_counter = st.button('Reset Counter')
                 if reset_counter:
@@ -1469,13 +1449,3 @@ elif page == "9: Download":
 
         if submitted:
             st.download_button('Download', output, file_name=export_name)
-
-            # all_sheets = [st.session_state.df_raw, st.session_state.df_untouched, social, traditional, st.session_state.df_dupes, st.session_state.df_social, st.session_state.df_traditional]
-            # for sheet in all_sheets:
-            #     buffer = io.StringIO()
-            #     sheet.info(buf=buffer)
-            #     s = buffer.getvalue()
-            #     st.text(s)
-
-                # pandas 1.3.5 to 1.4.2
-                # streamlit~=1.8.1 to 1.9.0
