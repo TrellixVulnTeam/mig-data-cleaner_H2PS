@@ -789,7 +789,6 @@ elif page == "5: Authors - Missing":
                 st.success("✓ Nothing left to update here.")
 
         col1, col2 = st.columns(2)
-        # TODO: authors not showing up
         with col1:
             st.subheader("Original Top Authors")
             st.dataframe(st.session_state.original_trad_auths)
@@ -801,7 +800,7 @@ elif page == "5: Authors - Missing":
         # st.subheader("Fixable Author Stats")
         # stats = (fixable_headline_stats(traditional, primary="Headline", secondary="Author"))
         # st.text(stats)
-        st.dataframe(st.session_state.df_traditional)
+        # st.dataframe(st.session_state.df_traditional)
 
 
 elif page == "6: Authors - Outlets":
