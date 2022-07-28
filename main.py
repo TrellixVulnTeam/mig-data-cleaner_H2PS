@@ -300,8 +300,6 @@ elif page == "2: Standard Cleaning":
             df.drop(["sub"], axis=1, inplace=True, errors='ignore')
 
 
-        # TODO: Option for Moreover URL Yahoos
-
         def moreover_yahoo_cleanup(df, outlet_name):
             df.loc[(df['URL'].str.contains('ct.moreover')) & (df['Outlet'] == outlet_name), "Outlet"] = "Yahoo! News"
             df.loc[(df['URL'].str.contains('ct.moreover')) & (df['Outlet'] == outlet_name), "Impressions"] = 80828000
@@ -338,6 +336,7 @@ elif page == "2: Standard Cleaning":
             merge_online = st.checkbox("Merge 'blogs' and 'press releases' into 'Online'", value=True)
             fill_known_imp = st.checkbox("Fill missing impressions values where known match exists in data", value=True)
             drop_dupes = st.checkbox("Drop duplicates", value=True)
+            skip_yahoos = st.checkbox("Skip Yahoo normalization", value=False)
             submitted = st.form_submit_button("Go!")
             if submitted:
                 with st.spinner("Running standard cleaning."):
@@ -415,21 +414,21 @@ elif page == "2: Standard Cleaning":
                     st.session_state.df_raw[['Headline']] = st.session_state.df_raw[['Headline']].fillna('')
                     st.session_state.df_raw['Headline'] = st.session_state.df_raw['Headline'].map(lambda Headline: titlecase(Headline))
 
+                    if skip_yahoos == False:
+                        # Yahoo standardizer
+                        yahoo_cleanup(st.session_state.df_raw, 'sports.yahoo.com')
+                        yahoo_cleanup(st.session_state.df_raw, 'www.yahoo.com')
+                        yahoo_cleanup(st.session_state.df_raw, 'news.yahoo.com')
+                        yahoo_cleanup(st.session_state.df_raw, 'style.yahoo.com')
+                        yahoo_cleanup(st.session_state.df_raw, 'finance.yahoo.com')
+                        yahoo_cleanup(st.session_state.df_raw, 'es-us.finanzas.yahoo.com')
+                        yahoo_cleanup(st.session_state.df_raw, 'money.yahoo.com')
 
-                    # Yahoo standardizer
-                    yahoo_cleanup(st.session_state.df_raw, 'sports.yahoo.com')
-                    yahoo_cleanup(st.session_state.df_raw, 'www.yahoo.com')
-                    yahoo_cleanup(st.session_state.df_raw, 'news.yahoo.com')
-                    yahoo_cleanup(st.session_state.df_raw, 'style.yahoo.com')
-                    yahoo_cleanup(st.session_state.df_raw, 'finance.yahoo.com')
-                    yahoo_cleanup(st.session_state.df_raw, 'es-us.finanzas.yahoo.com')
-                    yahoo_cleanup(st.session_state.df_raw, 'money.yahoo.com')
-
-                    moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! US')
-                    moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! en Español')
-                    moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! Money')
-                    # moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! Style')
-                    # moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! News')
+                        moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! US')
+                        moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! en Español')
+                        moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! Money')
+                        # moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! Style')
+                        # moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! News')
 
 
 
