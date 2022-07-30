@@ -51,7 +51,7 @@ for key, value in string_vars.items():
   if key not in st.session_state:
       st.session_state[key] = value
 
-df_vars = ['df_traditional', 'df_social', 'df_dupes', 'original_trad_auths', 'auth_outlet_table', 'original_auths', 'df_raw', 'df_untouched', 'author_outlets', 'broadcast_set', 'blank_set']
+df_vars = ['df_traditional', 'df_social', 'df_dupes', 'original_trad_auths', 'auth_outlet_table', 'original_auths', 'df_raw', 'df_untouched', 'author_outlets', 'broadcast_set', 'blank_set', 'df_yahoos']
 for _ in df_vars:
     if _ not in st.session_state:
         st.session_state[_] = pd.DataFrame()
@@ -96,7 +96,7 @@ st.sidebar.markdown("""
     [Quickstart Guide](https://github.com/JeremyParkin/mig-data-cleaner/blob/main/README.md) \n
     [GitHub Project](https://github.com/JeremyParkin/mig-data-cleaner) 
     """)
-st.sidebar.caption("v.1.5.4.1")
+st.sidebar.caption("v.1.5.4.2")
 
 if page == "1: Getting Started":
     st.title('Getting Started')
@@ -308,6 +308,27 @@ elif page == "2: Standard Cleaning":
             df.loc[(df['URL'].str.contains('ct.moreover')) & (df['Outlet'] == outlet_name), "City"] = (np.nan)
             df.loc[(df['URL'].str.contains('ct.moreover')) & (df['Outlet'] == outlet_name), "Prov/State"] = (np.nan)
 
+        def yahoo_dedupe(df):
+            # extract subset of all yahoos
+            st.session_state.df_yahoos = st.session_state.df_raw.loc[st.session_state.df_raw['Outlet'].str.contains('yahoo')]
+            st.session_state.df_raw = st.session_state.df_raw[~st.session_state.df_raw['Outlet'].str.contains('yahoo')]
+
+            # sort by headline THEN by impressions
+            st.session_state.df_yahoos = st.session_state.df_yahoos.sort_values(
+                ["Headline", "Impressions", "Author"], axis=0, ascending=[True, False, True])
+
+            # Save duplicate yahoo headlines -- NOTE - LOCAL VARIABLE ISSUE
+            dupe_yahoos = st.session_state.df_yahoos[st.session_state.df_yahoos['Headline'].duplicated(keep='first') == True]
+
+            # drop duplicates (to dupe dataframe), keep first
+            st.session_state.df_yahoos = st.session_state.df_yahoos[~st.session_state.df_yahoos['Headline'].duplicated(keep='first') == True]
+
+            # rejoin yahoos to
+            frames = [st.session_state.df_raw, dupe_yahoos]
+            st.session_state.df_raw = pd.concat(frames)
+
+
+
 
         def fixable_impressions_list(df):
             """WIP - Returns item from most fixable imp list"""
@@ -414,6 +435,9 @@ elif page == "2: Standard Cleaning":
                     st.session_state.df_raw[['Headline']] = st.session_state.df_raw[['Headline']].fillna('')
                     st.session_state.df_raw['Headline'] = st.session_state.df_raw['Headline'].map(lambda Headline: titlecase(Headline))
 
+
+                    #TODO: If skipping, still keep just one version, highest reach, yahoo news
+
                     if skip_yahoos == False:
                         # Yahoo standardizer
                         yahoo_cleanup(st.session_state.df_raw, 'sports.yahoo.com')
@@ -429,6 +453,31 @@ elif page == "2: Standard Cleaning":
                         moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! Money')
                         # moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! Style')
                         # moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! News')
+
+
+                    else:
+                        # extract subset of all yahoos
+                        st.session_state.df_yahoos = st.session_state.df_raw.loc[
+                            st.session_state.df_raw['Outlet'].str.contains('yahoo')]
+                        st.session_state.df_raw = st.session_state.df_raw[
+                            ~st.session_state.df_raw['Outlet'].str.contains('yahoo')]
+
+                        # sort by headline THEN by impressions
+                        st.session_state.df_yahoos = st.session_state.df_yahoos.sort_values(
+                            ["Headline", "Impressions", "Author"], axis=0, ascending=[True, False, True])
+
+                        # Save duplicate yahoo headlines -- NOTE - LOCAL VARIABLE ISSUE
+                        dupe_yahoos = st.session_state.df_yahoos[
+                            st.session_state.df_yahoos['Headline'].duplicated(keep='first') == True]
+
+                        # drop duplicates (to dupe dataframe), keep first
+                        st.session_state.df_yahoos = st.session_state.df_yahoos[
+                            ~st.session_state.df_yahoos['Headline'].duplicated(keep='first') == True]
+
+                        # rejoin yahoos to
+                        frames = [st.session_state.df_raw, dupe_yahoos]
+                        st.session_state.df_raw = pd.concat(frames)
+
 
 
 
