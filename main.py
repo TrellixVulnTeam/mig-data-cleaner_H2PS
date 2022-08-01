@@ -74,13 +74,10 @@ st.sidebar.title('MIG: Data Cleaning App')
 pagelist = [
     "1: Getting Started",
     "2: Standard Cleaning",
-    "3: Impressions - Outliers",
-    "4: Impressions - Fill Blanks",
-    "5: Authors - Missing",
-    "6: Authors - Outlets",
-    "7: Translation",
-    "8: Review",
-    "9: Download"]
+    "3: Authors - Missing",
+    "4: Authors - Outlets",
+    "5: Translation",
+    "6: Download"]
 
 page = st.sidebar.radio("Data Cleaning Steps:", pagelist, index=0)
 st.sidebar.markdown("")
@@ -147,26 +144,26 @@ if page == "1: Getting Started":
             st.write(original_top_outlets)
 
         st.markdown('##')
-        st.subheader('Mention Trend')
-
-        trend = alt.Chart(st.session_state.df_untouched).mark_line().encode(
-            x='Published Date:T',
-            y='sum(Mentions):Q'
-        )
-        st.altair_chart(trend, use_container_width=True)
-
-        st.markdown('##')
-        st.subheader('Impressions Trend')
-        trend2 = alt.Chart(st.session_state.df_untouched).mark_line().encode(
-            x='Published Date:T',
-            y='sum(Audience Reach):Q'
-        )
-        st.altair_chart(trend2, use_container_width=True)
-
-        st.subheader("Raw Data")
-        st.markdown('(First 100 rows)')
-        st.dataframe(st.session_state.df_untouched.head(100).style.format(format_dict, na_rep=' '))
-        st.markdown('##')
+        # st.subheader('Mention Trend')
+        #
+        # trend = alt.Chart(st.session_state.df_untouched).mark_line().encode(
+        #     x='Published Date:T',
+        #     y='sum(Mentions):Q'
+        # )
+        # st.altair_chart(trend, use_container_width=True)
+        #
+        # st.markdown('##')
+        # st.subheader('Impressions Trend')
+        # trend2 = alt.Chart(st.session_state.df_untouched).mark_line().encode(
+        #     x='Published Date:T',
+        #     y='sum(Audience Reach):Q'
+        # )
+        # st.altair_chart(trend2, use_container_width=True)
+        #
+        # st.subheader("Raw Data")
+        # st.markdown('(First 100 rows)')
+        # st.dataframe(st.session_state.df_untouched.head(100).style.format(format_dict, na_rep=' '))
+        # st.markdown('##')
 
 
     if st.session_state.upload_step == False:
@@ -288,46 +285,25 @@ elif page == "2: Standard Cleaning":
                     st.write(st.session_state.df_dupes['Type'].cat.remove_unused_categories().value_counts())
                 st.dataframe(st.session_state.df_dupes.style.format(format_dict, na_rep=' '))
     else:
-        def yahoo_cleanup(df, url_string):
-            df.loc[df['URL'].str.contains(url_string, na=False), "Outlet"] = "Yahoo! News"
-            df.loc[df['URL'].str.contains(url_string, na=False), "Impressions"] = 80828000
-            df.loc[df['URL'].str.contains(url_string, na=False), "Country"] = (np.nan)
-            df.loc[df['URL'].str.contains(url_string, na=False), "Continent"] = (np.nan)
-            df.loc[df['URL'].str.contains(url_string, na=False), "City"] = (np.nan)
-            df.loc[df['URL'].str.contains(url_string, na=False), "Prov/State"] = (np.nan)
-            df.loc[df['URL'].str.contains(url_string, na=False), "sub"] = df['URL'].str.rsplit('/', 1).str[-1]
-            df.loc[df['URL'].str.contains(url_string, na=False), "URL"] = 'https://news.yahoo.com/' + df["sub"]
-            df.drop(["sub"], axis=1, inplace=True, errors='ignore')
-
-
-        def moreover_yahoo_cleanup(df, outlet_name):
-            df.loc[(df['URL'].str.contains('ct.moreover')) & (df['Outlet'] == outlet_name), "Outlet"] = "Yahoo! News"
-            df.loc[(df['URL'].str.contains('ct.moreover')) & (df['Outlet'] == outlet_name), "Impressions"] = 80828000
-            df.loc[(df['URL'].str.contains('ct.moreover')) & (df['Outlet'] == outlet_name), "Country"] = (np.nan)
-            df.loc[(df['URL'].str.contains('ct.moreover')) & (df['Outlet'] == outlet_name), "Continent"] = (np.nan)
-            df.loc[(df['URL'].str.contains('ct.moreover')) & (df['Outlet'] == outlet_name), "City"] = (np.nan)
-            df.loc[(df['URL'].str.contains('ct.moreover')) & (df['Outlet'] == outlet_name), "Prov/State"] = (np.nan)
-
-        def yahoo_dedupe(df):
-            # extract subset of all yahoos
-            st.session_state.df_yahoos = st.session_state.df_raw.loc[st.session_state.df_raw['Outlet'].str.contains('yahoo')]
-            st.session_state.df_raw = st.session_state.df_raw[~st.session_state.df_raw['Outlet'].str.contains('yahoo')]
-
-            # sort by headline THEN by impressions
-            st.session_state.df_yahoos = st.session_state.df_yahoos.sort_values(
-                ["Headline", "Impressions", "Author"], axis=0, ascending=[True, False, True])
-
-            # Save duplicate yahoo headlines -- NOTE - LOCAL VARIABLE ISSUE
-            dupe_yahoos = st.session_state.df_yahoos[st.session_state.df_yahoos['Headline'].duplicated(keep='first') == True]
-
-            # drop duplicates (to dupe dataframe), keep first
-            st.session_state.df_yahoos = st.session_state.df_yahoos[~st.session_state.df_yahoos['Headline'].duplicated(keep='first') == True]
-
-            # rejoin yahoos to
-            frames = [st.session_state.df_raw, dupe_yahoos]
-            st.session_state.df_raw = pd.concat(frames)
-
-
+        # def yahoo_cleanup(df, url_string):
+        #     df.loc[df['URL'].str.contains(url_string, na=False), "Outlet"] = "Yahoo! News"
+        #     df.loc[df['URL'].str.contains(url_string, na=False), "Impressions"] = 80828000
+        #     df.loc[df['URL'].str.contains(url_string, na=False), "Country"] = (np.nan)
+        #     df.loc[df['URL'].str.contains(url_string, na=False), "Continent"] = (np.nan)
+        #     df.loc[df['URL'].str.contains(url_string, na=False), "City"] = (np.nan)
+        #     df.loc[df['URL'].str.contains(url_string, na=False), "Prov/State"] = (np.nan)
+        #     df.loc[df['URL'].str.contains(url_string, na=False), "sub"] = df['URL'].str.rsplit('/', 1).str[-1]
+        #     df.loc[df['URL'].str.contains(url_string, na=False), "URL"] = 'https://news.yahoo.com/' + df["sub"]
+        #     df.drop(["sub"], axis=1, inplace=True, errors='ignore')
+        #
+        #
+        # def moreover_yahoo_cleanup(df, outlet_name):
+        #     df.loc[(df['URL'].str.contains('ct.moreover')) & (df['Outlet'] == outlet_name), "Outlet"] = "Yahoo! News"
+        #     df.loc[(df['URL'].str.contains('ct.moreover')) & (df['Outlet'] == outlet_name), "Impressions"] = 80828000
+        #     df.loc[(df['URL'].str.contains('ct.moreover')) & (df['Outlet'] == outlet_name), "Country"] = (np.nan)
+        #     df.loc[(df['URL'].str.contains('ct.moreover')) & (df['Outlet'] == outlet_name), "Continent"] = (np.nan)
+        #     df.loc[(df['URL'].str.contains('ct.moreover')) & (df['Outlet'] == outlet_name), "City"] = (np.nan)
+        #     df.loc[(df['URL'].str.contains('ct.moreover')) & (df['Outlet'] == outlet_name), "Prov/State"] = (np.nan)
 
 
         def fixable_impressions_list(df):
@@ -352,12 +328,14 @@ elif page == "2: Standard Cleaning":
             return outlet_imps
 
 
+
         with st.form("my_form_basic_cleaning"):
             st.subheader("Cleaning options")
             merge_online = st.checkbox("Merge 'blogs' and 'press releases' into 'Online'", value=True)
             fill_known_imp = st.checkbox("Fill missing impressions values where known match exists in data", value=True)
             drop_dupes = st.checkbox("Drop duplicates", value=True)
-            skip_yahoos = st.checkbox("Skip Yahoo normalization", value=False)
+            # skip_yahoos = st.checkbox("Skip FULL Yahoo normalization", value=True)
+
             submitted = st.form_submit_button("Go!")
             if submitted:
                 with st.spinner("Running standard cleaning."):
@@ -407,6 +385,10 @@ elif page == "2: Standard Cleaning":
                     # Remove (Online)
                     st.session_state.df_raw['Outlet'] = st.session_state.df_raw['Outlet'].str.replace(' \(Online\)', '')
 
+                    # Replace wonky apostrophes
+                    st.session_state.df_raw['Headline'] = st.session_state.df_raw['Headline'].str.replace('\‘', '\'')
+                    st.session_state.df_raw['Headline'] = st.session_state.df_raw['Headline'].str.replace('\’', '\'')
+
 
                     # SOCIALS To sep df
                     soc_array = ['FACEBOOK', 'TWITTER', 'INSTAGRAM', 'REDDIT', 'YOUTUBE']
@@ -436,31 +418,29 @@ elif page == "2: Standard Cleaning":
                     st.session_state.df_raw['Headline'] = st.session_state.df_raw['Headline'].map(lambda Headline: titlecase(Headline))
 
 
-                    #TODO: If skipping, still keep just one version, highest reach, yahoo news
-
-                    if skip_yahoos == False:
-                        # Yahoo standardizer
-                        yahoo_cleanup(st.session_state.df_raw, 'sports.yahoo.com')
-                        yahoo_cleanup(st.session_state.df_raw, 'www.yahoo.com')
-                        yahoo_cleanup(st.session_state.df_raw, 'news.yahoo.com')
-                        yahoo_cleanup(st.session_state.df_raw, 'style.yahoo.com')
-                        yahoo_cleanup(st.session_state.df_raw, 'finance.yahoo.com')
-                        yahoo_cleanup(st.session_state.df_raw, 'es-us.finanzas.yahoo.com')
-                        yahoo_cleanup(st.session_state.df_raw, 'money.yahoo.com')
-
-                        moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! US')
-                        moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! en Español')
-                        moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! Money')
+                    # if skip_yahoos == False:
+                    #     # Yahoo standardizer
+                    #     yahoo_cleanup(st.session_state.df_raw, 'sports.yahoo.com')
+                    #     yahoo_cleanup(st.session_state.df_raw, 'www.yahoo.com')
+                    #     yahoo_cleanup(st.session_state.df_raw, 'news.yahoo.com')
+                    #     yahoo_cleanup(st.session_state.df_raw, 'style.yahoo.com')
+                    #     yahoo_cleanup(st.session_state.df_raw, 'finance.yahoo.com')
+                    #     yahoo_cleanup(st.session_state.df_raw, 'es-us.finanzas.yahoo.com')
+                    #     yahoo_cleanup(st.session_state.df_raw, 'money.yahoo.com')
+                    #
+                    #     moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! US')
+                    #     moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! en Español')
+                    #     moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! Money')
                         # moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! Style')
                         # moreover_yahoo_cleanup(st.session_state.df_raw, 'Yahoo! News')
 
 
-                    else:
+                    if drop_dupes == True:
                         # extract subset of all yahoos
                         st.session_state.df_yahoos = st.session_state.df_raw.loc[
-                            st.session_state.df_raw['Outlet'].str.contains('yahoo')]
+                            st.session_state.df_raw['Outlet'].str.contains('Yahoo')]
                         st.session_state.df_raw = st.session_state.df_raw[
-                            ~st.session_state.df_raw['Outlet'].str.contains('yahoo')]
+                            ~st.session_state.df_raw['Outlet'].str.contains('Yahoo')]
 
                         # sort by headline THEN by impressions
                         st.session_state.df_yahoos = st.session_state.df_yahoos.sort_values(
@@ -474,11 +454,15 @@ elif page == "2: Standard Cleaning":
                         st.session_state.df_yahoos = st.session_state.df_yahoos[
                             ~st.session_state.df_yahoos['Headline'].duplicated(keep='first') == True]
 
-                        # rejoin yahoos to
-                        frames = [st.session_state.df_raw, dupe_yahoos]
+                        # rejoin yahoos to main
+                        frames = [st.session_state.df_raw, st.session_state.df_yahoos]
                         st.session_state.df_raw = pd.concat(frames)
 
-
+                        # st.write("DF YAHOOS")
+                        # st.dataframe(st.session_state.df_yahoos)
+                        #
+                        # st.write("DUPE YAHOOS")
+                        # st.dataframe(dupe_yahoos)
 
 
 
@@ -538,7 +522,7 @@ elif page == "2: Standard Cleaning":
                         dupe_cols.drop(["dupe_helper"], axis=1, inplace=True, errors='ignore')
                         frames = [st.session_state.df_raw, st.session_state.broadcast_set, st.session_state.blank_set]
                         st.session_state.df_traditional = pd.concat(frames)
-                        st.session_state.df_dupes = pd.concat([dupe_urls, dupe_cols])
+                        st.session_state.df_dupes = pd.concat([dupe_urls, dupe_cols, dupe_yahoos])
 
 
                     else:
@@ -552,170 +536,9 @@ elif page == "2: Standard Cleaning":
                     st.session_state.standard_step = True
                     st.experimental_rerun()
 
-elif page == "3: Impressions - Outliers":
-    st.title('Impressions - Outliers')
-    if st.session_state.upload_step == False:
-        st.error('Please upload a CSV before trying this step.')
-
-    elif st.session_state.standard_step == False:
-        st.error('Please run the Standard Cleaning before trying this step.')
-    elif len(st.session_state.df_traditional) == 0:
-        st.subheader("No traditional media in data. Skip to next step.")
-
-    else:
-        st.subheader('Check highest impressions numbers:')
-        outliers = st.session_state.df_traditional[['Outlet', 'Type', 'Impressions', 'Headline', 'URL', 'Country']].nlargest(250,
-                                                                                                         'Impressions')
-        outliers.index.name = 'Row'
-        st.dataframe(outliers.style.format(format_dict, na_rep=' '))
-        outlier_index = outliers.index.values.tolist()
-
-        with st.form("Update Outliers", clear_on_submit=True):
-            st.subheader("Update Impressions Outliers")
-            index_numbers = st.multiselect('Row index number(s): ', outlier_index,
-                                           help='Select the row number from the table above.')
-            new_impressions_value = int(st.number_input('New impressions value for row(s)', step=1,
-                                                        help='Write in the new impression value for the selected row.'))
-            submitted = st.form_submit_button("Go!")
-            if submitted:
-                for index_number in index_numbers:
-                    st.session_state.df_traditional.loc[int(index_number), "Impressions"] = new_impressions_value
-
-                st.experimental_rerun()
 
 
-elif page == "4: Impressions - Fill Blanks":
-    st.title('Impressions - Fill Blanks')
-    # st.session_state.filled = False
-
-    if st.session_state.upload_step == False:
-        st.error('Please upload a CSV before trying this step.')
-
-    elif st.session_state.standard_step == False:
-        st.error('Please run the Standard Cleaning before trying this step.')
-
-    elif len(st.session_state.df_traditional) == 0:
-        st.warning("No traditional media in data. Skip to next step.")
-
-    elif st.session_state.filled == True:
-        st.success("Missing impressions fill complete!")
-        # with st.expander('Dataframe'):
-        #     st.dataframe(st.session_state.df_traditional)
-
-
-        # TODO: STATISTICAL FILL IMPROVEMENT, eg by type
-        # How to handle type with no impressions? if nan: 0 or 10
-        # Will this be good on small data sets? Or small categories, eg 2 known TV and 5 unknown
-        # Should different sized data sets recommend different approaches? Why?
-        # Maybe set number by media type instead of calculation?
-        # HALF DECILE BY TYPE FORMULA:  (data.groupby(['Type'])['Impressions'].quantile(.1))/2
-        # Custom fill number input?
-
-
-    else:
-        blank_impressions = st.session_state.df_traditional['Impressions'].isna().sum()
-
-        if blank_impressions == 0:
-            st.info('No missing impressions numbers in data')
-
-        else:
-
-            # mean = "{:,}".format(int(st.session_state.df_traditional.Impressions.mean()))
-            # median = "{:,}".format(int(st.session_state.df_traditional.Impressions.median()))
-            # tercile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.33)))
-            quartile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.25)))
-            twentieth_percentile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.2)))
-            # eighteenth_percentile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.18)))
-            # seventeenth_percentile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.17)))
-            fifteenth_percentile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.15)))
-            decile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.1)))
-            fifth_percentile = "{:,}".format(int(st.session_state.df_traditional.Impressions.quantile(0.05)))
-
-            st.markdown(f"#### MISSING: {blank_impressions}")
-            st.write("*************")
-
-            col1, col2 = st.columns(2)
-            with col1:
-                st.subheader("Statistical Levels")
-                # st.write(f"Average: {mean}")
-                # st.write(f"Median: {median}")
-                # st.write(f"Tercile: {tercile}")
-                st.write(f"25th percentile: {quartile}")
-                st.write(f"20th percentile: {twentieth_percentile}")
-                # st.write(f"18th Percentile: {eighteenth_percentile}")
-                # st.write(f"17th Percentile: {seventeenth_percentile}")
-                st.write(f"15th percentile: {fifteenth_percentile}")
-                st.write(f"10th percentile: {decile}")
-                st.write(f"5th percentile: {fifth_percentile}")
-
-            with col2:
-                filldict = {
-                    # 'Tercile': int(traditional.Impressions.quantile(0.33)),
-                    '25th percentile': int(st.session_state.df_traditional.Impressions.quantile(0.25)),
-                    '20th percentile': int(st.session_state.df_traditional.Impressions.quantile(0.2)),
-                    # '18th percentile': int(traditional.Impressions.quantile(0.18)),
-                    # '17th percentile': int(traditional.Impressions.quantile(0.17)),
-                    '15th percentile': int(st.session_state.df_traditional.Impressions.quantile(0.15)),
-                    '10th percentile': int(st.session_state.df_traditional.Impressions.quantile(0.1)),
-                    '5th percentile': int(st.session_state.df_traditional.Impressions.quantile(0.05))
-                }
-                with st.form('Fill Blanks'):
-                    st.subheader("Fill Blank Impressions")
-                    fill_blank_impressions_with = st.radio('Pick your statistical fill value: ', filldict.keys(),
-                                                           index=4)
-                    submitted = st.form_submit_button("Fill Blanks")
-                    if submitted:
-                        st.session_state.df_traditional[['Impressions']] = st.session_state.df_traditional[
-                            ['Impressions']].fillna(
-                            filldict[fill_blank_impressions_with])
-                        st.session_state.df_traditional['Impressions'] = st.session_state.df_traditional[
-                            'Impressions'].astype(int)
-                        # st.session_state.df_traditional = traditional
-                        st.session_state.filled = True
-                        st.experimental_rerun()
-
-        ################
-
-            # with st.expander('Fill by type (ONLY recommended for large data sets)'):
-            #
-            #     percentile_selected = st.select_slider('Percentile fill', range(0,21), 5)
-            #
-            #     fill_by_type_dict = st.session_state.df_traditional.groupby(['Type'])['Impressions'].quantile(percentile_selected/100).to_dict()
-            #
-            #     for k, v in fill_by_type_dict.items():
-            #         # fill_by_type_dict[k] = int(v)
-            #         fill_by_type_dict[k] = v
-            #
-            #
-            #     fill_by_type_table = pd.DataFrame.from_dict(fill_by_type_dict, orient='index', columns=[f'Fill Value at {percentile_selected} percentile'])
-            #
-            #     media_type_list = fill_by_type_table.index.tolist()
-            #
-            #     missing = [st.session_state.df_traditional.loc[st.session_state.df_traditional['Type'] == item].Impressions.isna().sum() for item in media_type_list]
-            #     known = [st.session_state.df_traditional['Type'].value_counts()[item] for item in media_type_list]
-            #     fill_by_type_table.insert(0, 'Missing', missing)
-            #     fill_by_type_table.insert(1, 'Known', known)
-            #     fill_by_type_table = fill_by_type_table[fill_by_type_table["Missing"] > 0]
-            #
-            #     st.subheader('Media types with missing impressions values')
-            #     fill_format_dict = {'Known': '{:,d}', f'Fill Value at {percentile_selected} percentile': '{:,.0f}'}
-            #     st.table(fill_by_type_table.style.format(fill_format_dict))
-            #     # st.table(fill_by_type_table)
-            #
-            #     with st.form('Fill Blanks by Type'):
-            #         st.subheader("Fill Blank Impressions")
-            #         submitted = st.form_submit_button("Fill Blanks")
-            #         if submitted:
-            #
-            #             # data.loc[(data['Type'] == 'ONLINE NEWS') & data['Impressions'].isna(), 'Impressions'] = 500
-            #             for k, v in fill_by_type_dict.items():
-            #                 st.session_state.df_traditional.loc[(st.session_state.df_traditional['Type'] == k) & st.session_state.df_traditional['Impressions'].isna(), 'Impressions'] = v
-            #
-            #             st.session_state.filled = True
-            #             st.experimental_rerun()
-
-
-elif page == "5: Authors - Missing":
+elif page == "3: Authors - Missing":
     st.title('Authors - Missing')
     # original_trad_auths = st.session_state.original_trad_auths
 
@@ -851,7 +674,7 @@ elif page == "5: Authors - Missing":
         # st.dataframe(st.session_state.df_traditional)
 
 
-elif page == "6: Authors - Outlets":
+elif page == "4: Authors - Outlets":
     st.title("Author - Outlets")
     if st.session_state.upload_step == False:
         st.error('Please upload a CSV before trying this step.')
@@ -1147,7 +970,7 @@ elif page == "6: Authors - Outlets":
                 st.write("✓ Nothing left to update here.")
 
 
-elif page == "7: Translation":
+elif page == "5: Translation":
     st.title('Translation')
     from deep_translator import GoogleTranslator
     from concurrent.futures import ThreadPoolExecutor
@@ -1274,109 +1097,8 @@ elif page == "7: Translation":
                 st.experimental_rerun()
 
 
-elif page == "8: Review":
-    st.title('Review')
-    # import altair as alt
 
-    if st.session_state.upload_step == False:
-        st.error('Please upload a CSV before trying this step.')
-    elif st.session_state.standard_step == False:
-        st.error('Please run the Standard Cleaning before trying this step.')
-    else:
-        if len(st.session_state.df_traditional) > 0:
-            with st.expander("Traditional"):
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.subheader("Basic Metrics")
-                    st.metric(label="Mentions", value="{:,}".format(len(st.session_state.df_traditional)))
-                    st.metric(label="Impressions", value="{:,}".format(st.session_state.df_traditional['Impressions'].sum()))
-                with col2:
-                    st.subheader("Media Type")
-                    st.write(st.session_state.df_traditional['Type'].cat.remove_unused_categories().value_counts())
-
-
-                col3, col4 = st.columns(2)
-                with col3:
-                    st.subheader("Top Authors")
-                    top_authors = (top_x_by_mentions(st.session_state.df_traditional, "Author"))
-                    st.table(top_authors)
-
-                with col4:
-                    st.subheader("Top Outlets")
-                    top_outlets = (top_x_by_mentions(st.session_state.df_traditional, "Outlet"))
-                    st.table(top_outlets)
-
-                # st.markdown('##')
-                # st.subheader('Mention Trend')
-
-                # trend = traditional.groupby('Date')[['Mentions']].sum()
-                # trend.plot()
-
-                # trend = alt.Chart(traditional).mark_line().encode(
-                #     x='Date:T',
-                #     y='count(Mentions):Q'
-                # )
-                # st.altair_chart(trend, use_container_width=True)
-                #
-                # st.markdown('##')
-                # st.subheader('Impressions Trend')
-                #
-                # trend2 = alt.Chart(traditional).mark_line().encode(
-                #     x='Date:T',
-                #     y='sum(Impressions):Q'
-                # )
-                # st.altair_chart(trend2, use_container_width=True)
-
-                # st.subheader("Cleaned Data")
-                # st.dataframe(traditional.style.format(format_dict))
-                st.markdown('##')
-
-        if len(st.session_state.df_social) > 0:
-            with st.expander("Social"):
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.subheader("Basic Metrics")
-                    st.metric(label="Mentions", value="{:,}".format(len(st.session_state.df_social)))
-                    st.metric(label="Impressions", value="{:,}".format(st.session_state.df_social['Impressions'].sum()))
-                with col2:
-                    st.subheader("Media Type")
-                    st.write(st.session_state.df_social['Type'].cat.remove_unused_categories().value_counts())
-
-                # st.markdown('##')
-                # st.subheader('Mention Trend')
-                #
-                # trend = alt.Chart(social).mark_line().encode(
-                #     x='Date:T',
-                #     y='count(Mentions):Q'
-                # )
-                # st.altair_chart(trend, use_container_width=True)
-                #
-                # st.markdown('##')
-                # st.subheader('Impressions Trend')
-                #
-                # trend2 = alt.Chart(social).mark_line().encode(
-                #     x='Date:T',
-                #     y='sum(Impressions):Q'
-                # )
-                # st.altair_chart(trend2, use_container_width=True)
-
-                # st.subheader("Cleaned Data")
-                # st.dataframe(social.style.format(format_dict))
-                st.markdown('##')
-
-        if len(st.session_state.df_dupes) > 0:
-            with st.expander("Duplicates Removed"):
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.subheader("Basic Metrics")
-                    st.metric(label="Mentions", value="{:,}".format(len(st.session_state.df_dupes)))
-                    st.metric(label="Impressions", value="{:,}".format(st.session_state.df_dupes['Impressions'].sum()))
-                with col2:
-                    st.subheader("Media Type")
-                    st.write(st.session_state.df_dupes['Type'].cat.remove_unused_categories().value_counts())
-
-
-elif page == "9: Download":
+elif page == "6: Download":
     st.title('Download')
     import io
 
