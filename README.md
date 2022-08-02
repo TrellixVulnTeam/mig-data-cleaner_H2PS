@@ -38,4 +38,8 @@ STEP DETAILS
   - Translate headlines, summaries and snippets to English
 
 6: Download
+<<<<<<< HEAD
   - Generate and download an xlsx file with all the cleaned data
+=======
+  - Generate and download an xlsx file with all the cleaned data
+>>>>>>> main
