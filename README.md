@@ -23,30 +23,19 @@ STEP DETAILS
   - Media Types Cleaned
   - Columns Sorted
   - Tags Expanded
-  - Yahoo Standardization
   - Original URLs Merged
   - Extra Spaces Removed
   - Social Split Out
-  - Duplicates Removed
+  - Duplicates Removed (optional)
 
-3: Impressions - Outliers
-  - Manual step to check highest impressions numbers and update as necessary
-
-4: Impressions - Fill Blanks
-  - Select a statistical fill level to apply to records with missing impressions numbers
-
-
-5: Authors - Missing
+3: Authors - Missing
   - Assign authors to matched headlines where some instances have author info and others do not  
 
-6: Authors - Outlets
+4: Authors - Outlets
   - Match outlets to top authors using data from your CSV and from Agility's Media Database
 
-7: Translation
+5: Translation
   - Translate headlines, summaries and snippets to English
 
-8: Review
-  - check totals and other details for traditional, social and deleted duplicates
-
-9: Download
+6: Download
   - Generate and download an xlsx file with all the cleaned data

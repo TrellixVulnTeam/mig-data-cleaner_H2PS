@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
+# import numpy as np
 import warnings
 
 warnings.filterwarnings('ignore')
@@ -97,7 +97,7 @@ st.sidebar.caption("v.1.5.4.2")
 
 if page == "1: Getting Started":
     st.title('Getting Started')
-    import altair as alt
+    # import altair as alt
     # import io
 
     # TODO: Fully blank author column creates an error with top X function
@@ -238,8 +238,6 @@ elif page == "2: Standard Cleaning":
     from titlecase import titlecase
 
 
-    # TODO: Option to REMOVE NEWSWIRES
-
     if st.session_state.upload_step == False:
         st.error('Please upload a CSV before trying this step.')
     elif st.session_state.standard_step:
@@ -340,12 +338,12 @@ elif page == "2: Standard Cleaning":
             if submitted:
                 with st.spinner("Running standard cleaning."):
 
-                    st.session_state.df_raw.Type.replace({"ONLINE_NEWS": "ONLINE NEWS", "PRESS_RELEASE": "PRESS RELEASE"}, inplace=True)
+                    st.session_state.df_raw["Type"].replace({"ONLINE_NEWS": "ONLINE NEWS", "PRESS_RELEASE": "PRESS RELEASE"}, inplace=True)
 
                     type_categories = (['ONLINE NEWS', 'PRINT', 'RADIO', 'TV', 'BLOGS', 'PRESS RELEASE', 'FACEBOOK', 'TWITTER', 'INSTAGRAM', 'REDDIT', 'YOUTUBE'])
 
-                    st.session_state.df_raw.Type = pd.Categorical(
-                        st.session_state.df_raw.Type, categories=type_categories)
+                    st.session_state.df_raw["Type"] = pd.Categorical(
+                        st.session_state.df_raw["Type"], categories=type_categories)
                     st.session_state.df_raw.loc[st.session_state.df_raw['URL'].str.contains("www.facebook.com", na=False), 'Type'] = "FACEBOOK"
                     st.session_state.df_raw.loc[st.session_state.df_raw['URL'].str.contains("/twitter.com", na=False), 'Type'] = "TWITTER"
                     st.session_state.df_raw.loc[st.session_state.df_raw['URL'].str.contains("www.instagram.com", na=False), 'Type'] = "INSTAGRAM"
@@ -688,7 +686,7 @@ elif page == "4: Authors - Outlets":
         st.session_state.df_traditional.Mentions = st.session_state.df_traditional.Mentions.astype('int')
         auth_outlet_skipped = st.session_state.auth_outlet_skipped
         auth_outlet_table = st.session_state.auth_outlet_table
-        top_auths_by = st.session_state.top_auths_by
+        # top_auths_by = st.session_state.top_auths_by
 
         def fetch_outlet(author_name):
             contact_url = "https://mediadatabase.agilitypr.com/api/v4/contacts/search"
@@ -725,17 +723,17 @@ elif page == "4: Authors - Outlets":
             return [non_match if cell_value != author_name else match for cell_value in series]
 
 
-        top_auths_by = st.selectbox('Top Authors by: ', ['Mentions', 'Impressions'], on_change=reset_skips)
-        st.session_state.top_auths_by = top_auths_by
+        st.session_state.top_auths_by = st.selectbox('Top Authors by: ', ['Mentions', 'Impressions'], on_change=reset_skips)
+        # st.session_state.top_auths_by = top_auths_by
         if len(auth_outlet_table) == 0:
-            if top_auths_by == 'Mentions':
+            if st.session_state.top_auths_by == 'Mentions':
                 auth_outlet_table = st.session_state.df_traditional[['Author', 'Mentions', 'Impressions']].groupby(
                     by=['Author']).sum().sort_values(
                     ['Mentions', 'Impressions'], ascending=False).reset_index()
                 auth_outlet_table['Outlet'] = ''
                 auth_outlet_todo = auth_outlet_table
 
-            if top_auths_by == 'Impressions':
+            if st.session_state.top_auths_by == 'Impressions':
                 auth_outlet_table = st.session_state.df_traditional[['Author', 'Mentions', 'Impressions']].groupby(
                     by=['Author']).sum().sort_values(
                     ['Impressions', 'Mentions'], ascending=False).reset_index()
@@ -743,12 +741,12 @@ elif page == "4: Authors - Outlets":
                 auth_outlet_todo = auth_outlet_table
 
         else:
-            if top_auths_by == 'Mentions':
+            if st.session_state.top_auths_by == 'Mentions':
                 auth_outlet_table = auth_outlet_table.sort_values(['Mentions', 'Impressions'],
                                                                   ascending=False)  # .reset_index()
                 auth_outlet_todo = auth_outlet_table.loc[auth_outlet_table['Outlet'] == '']
 
-            if top_auths_by == 'Impressions':
+            if st.session_state.top_auths_by == 'Impressions':
                 auth_outlet_table = auth_outlet_table.sort_values(['Impressions', 'Mentions'],
                                                                   ascending=False)  # .reset_index()
                 auth_outlet_todo = auth_outlet_table.loc[auth_outlet_table['Outlet'] == '']
@@ -934,11 +932,11 @@ elif page == "4: Authors - Outlets":
             with col1:
                 st.subheader("Top Authors")
                 if 'Outlet' in auth_outlet_table.columns:
-                    if top_auths_by == 'Mentions':
+                    if st.session_state.top_auths_by == 'Mentions':
                         st.table(
                             auth_outlet_table[['Author', 'Outlet', 'Mentions', 'Impressions']].fillna('').sort_values(
                                 ['Mentions', 'Impressions'], ascending=False).head(15).style.format(format_dict, na_rep=' '))
-                    if top_auths_by == 'Impressions':
+                    if st.session_state.top_auths_by == 'Impressions':
                         st.table(
                             auth_outlet_table[['Author', 'Outlet', 'Mentions', 'Impressions']].fillna('').sort_values(
                                 ['Impressions', 'Mentions'], ascending=False).head(15).style.format(format_dict, na_rep=' '))
