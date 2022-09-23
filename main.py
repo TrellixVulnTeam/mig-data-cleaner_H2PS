@@ -230,7 +230,9 @@ if page == "1: Getting Started":
                         'Media Type': 'Type',
                         'Coverage Snippet': 'Snippet',
                         'Province/State': 'Prov/State',
-                        'Audience Reach': 'Impressions'})
+                        'Audience Reach': 'Impressions',
+                        'AVE(USD)': 'AVE'}, errors='ignore')
+                    
 
                     st.session_state.upload_step = True
                     st.experimental_rerun()
