@@ -119,10 +119,7 @@ if page == "1: Getting Started":
 
 
         st.session_state.df_untouched['Audience Reach'] = st.session_state.df_untouched['Audience Reach'].astype('Int64')
-        if "AVE(USD)" in st.session_state.df_untouched:
-            st.session_state.df_untouched = st.session_state.df_untouched.rename(columns={
-                            'AVE(USD)': 'AVE'})
-        st.session_state.df_untouched['AVE'] = st.session_state.df_untouched['AVE'].fillna(0)
+                st.session_state.df_untouched['AVE'] = st.session_state.df_untouched['AVE'].fillna(0)
 
 
         st.header('Exploratory Data Analysis')
@@ -230,7 +227,12 @@ if page == "1: Getting Started":
                         'Media Type': 'Type',
                         'Coverage Snippet': 'Snippet',
                         'Province/State': 'Prov/State',
-                        'Audience Reach': 'Impressions'})
+                        'Audience Reach': 'Impressions',
+                        'AVE(USD)': 'AVE'}, errors='ignore')
+                    
+#                     if "AVE(USD)" in st.session_state.df_untouched:
+#             st.session_state.df_untouched = st.session_state.df_untouched.rename(columns={
+#                             'AVE(USD)': 'AVE'})
 
                     st.session_state.upload_step = True
                     st.experimental_rerun()
