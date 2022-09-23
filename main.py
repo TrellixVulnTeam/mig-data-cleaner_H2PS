@@ -520,7 +520,8 @@ elif page == "2: Standard Cleaning":
                         dupe_cols.drop(["dupe_helper"], axis=1, inplace=True, errors='ignore')
                         frames = [st.session_state.df_raw, st.session_state.broadcast_set, st.session_state.blank_set]
                         st.session_state.df_traditional = pd.concat(frames)
-                        st.session_state.df_dupes = pd.concat([dupe_urls, dupe_cols, dupe_yahoos])
+#                         st.session_state.df_dupes = pd.concat([dupe_urls, dupe_cols, dupe_yahoos])
+                        st.session_state.df_dupes = pd.concat([dupe_urls, dupe_cols])
 
 
                     else:
